@@ -1,4 +1,4 @@
-name: Deploy HTML Site to IPFS & Pinata
+name: Deploy HTML to Pinata (IPFS)
 
 on:
   workflow_dispatch:  # Manual trigger
@@ -12,50 +12,40 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Install IPFS CLI
-      - name: Install IPFS CLI
+      # 2️⃣ Install zip and jq
+      - name: Install zip and jq
         run: |
-          curl -fsSL https://dist.ipfs.io/go-ipfs/v0.22.0/go-ipfs_v0.22.0_linux-amd64.tar.gz | tar -xz
-          sudo mv go-ipfs/ipfs /usr/local/bin/
+          sudo apt-get update
+          sudo apt-get install -y zip jq
 
-      # 3️⃣ Initialize temporary IPFS repo
-      - name: Init IPFS repo
-        run: ipfs init
-
-      # 4️⃣ Prepare site folder (only files we want)
-      - name: Prepare site folder
+      # 3️⃣ Zip project excluding .github and .idea
+      - name: Zip HTML project
         run: |
-          rm -rf site
-          mkdir site
-          cp index.html site/
-          cp -r assets site/
-
-      # 5️⃣ Add site folder to IPFS
-      - name: Add site folder to IPFS
-        id: ipfs_add
-        run: |
-          FOLDER_CID=$(ipfs add -r -Q site)
-          echo "Folder CID: $FOLDER_CID"
-          echo "cid=$FOLDER_CID" >> $GITHUB_OUTPUT
-
-      # 6️⃣ Pin folder to Pinata
-      - name: Pin folder to Pinata
-        run: |
-          if [ -z "${{ secrets.PINATA_JWT }}" ]; then
-            echo "No Pinata JWT, skipping pin."
-            exit 0
+          rm -f site.zip
+          zip -r site.zip . -x ".git/*" ".github/*" ".idea/*"
+          if [ ! -f "site.zip" ]; then
+            echo "Zip failed!" && exit 1
           fi
-          RESPONSE=$(curl -s -X POST "https://api.pinata.cloud/pinning/pinByHash" \
-            -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"hashToPin\":\"${{ steps.ipfs_add.outputs.cid }}\",\"pinataMetadata\":{\"name\":\"site-folder\"}}")
-          echo "Pinata response: $RESPONSE"
 
-      # 7️⃣ Output multiple gateway URLs
-      - name: Show multiple gateway URLs
+      # 4️⃣ Upload to Pinata
+      - name: Upload to Pinata (JWT)
+        id: upload
         run: |
-          CID=${{ steps.ipfs_add.outputs.cid }}
-          echo "Your site folder CID: $CID"
+          RESPONSE=$(curl -s -X POST "https://api.pinata.cloud/pinning/pinFileToIPFS" \
+            -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}" \
+            -F file=@site.zip)
+          echo "Pinata response: $RESPONSE"
+          CID=$(echo "$RESPONSE" | jq -r '.IpfsHash')
+          if [ "$CID" = "null" ] || [ -z "$CID" ]; then
+            echo "Failed to get CID from Pinata!" && exit 1
+          fi
+          echo "cid=$CID" >> $GITHUB_OUTPUT
+
+      # 5️⃣ Show CID & gateway URLs
+      - name: Show CID and gateways
+        run: |
+          CID=${{ steps.upload.outputs.cid }}
+          echo "New IPFS CID: $CID"
           echo "Test your site on multiple gateways:"
           echo "dweb.link        : https://$CID.ipfs.dweb.link/"
           echo "ipfs.io          : https://ipfs.io/ipfs/$CID/"
