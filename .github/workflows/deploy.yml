@@ -12,89 +12,62 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Install IPFS Kubo
-      - name: Install IPFS
-        run: |
-          wget https://dist.ipfs.tech/kubo/v0.24.0/kubo_v0.24.0_linux-amd64.tar.gz
-          tar -xvzf kubo_v0.24.0_linux-amd64.tar.gz
-          sudo bash kubo/install.sh
-          ipfs --version
-
-      # 3️⃣ Initialize IPFS
-      - name: Initialize IPFS
-        run: |
-          ipfs init
-          ipfs config Addresses.API /ip4/127.0.0.1/tcp/5001
-          ipfs config Addresses.Gateway /ip4/127.0.0.1/tcp/8080
-
-      # 4️⃣ Start IPFS daemon in background
-      - name: Start IPFS daemon
-        run: |
-          ipfs daemon &
-          sleep 5
-          ipfs swarm peers
-
-      # 5️⃣ Add site folder to IPFS
-      - name: Add folder to IPFS
-        id: ipfs_add
+      # 2️⃣ Verify site folder exists
+      - name: Verify site folder
         run: |
           if [ ! -d "site" ]; then
             echo "Error: site/ folder not found!"
             exit 1
           fi
-          
-          echo "Adding site folder to IPFS..."
-          CID=$(ipfs add -r -Q site | tail -n 1)
-          
-          echo "Folder CID: $CID"
-          echo "cid=$CID" >> $GITHUB_OUTPUT
+          echo "Found site folder, listing contents:"
+          find site -type f
 
-      # 6️⃣ Pin to Pinata
-      - name: Pin to Pinata
+      # 3️⃣ Upload to Pinata (without wrapWithDirectory)
+      - name: Upload to Pinata
+        id: pinata_upload
         run: |
-          echo "Pinning CID ${{ steps.ipfs_add.outputs.cid }} to Pinata..."
+          echo "Uploading site folder to Pinata..."
           
-          RESPONSE=$(curl -X POST "https://api.pinata.cloud/pinning/pinByHash" \
+          # Build the curl command
+          CURL_ARGS=()
+          
+          # Add all files
+          while IFS= read -r file; do
+            rel_path="${file#site/}"
+            CURL_ARGS+=(-F "file=@${file};filename=${rel_path}")
+          done < <(find site -type f)
+          
+          # Add metadata WITHOUT wrapWithDirectory
+          CURL_ARGS+=(-F 'pinataMetadata={"name":"site-folder"}')
+          
+          # Execute upload
+          RESPONSE=$(curl -X POST "https://api.pinata.cloud/pinning/pinFileToIPFS" \
             -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"hashToPin\": \"${{ steps.ipfs_add.outputs.cid }}\",
-              \"pinataMetadata\": {
-                \"name\": \"site-folder\"
-              }
-            }")
+            "${CURL_ARGS[@]}")
           
           echo "Pinata response: $RESPONSE"
           
-          # Check if pinning was successful
-          if echo "$RESPONSE" | grep -q "error"; then
-            echo "Pinata pinning queued or already pinned"
-          else
-            echo "Successfully pinned to Pinata!"
+          # Extract CID
+          CID=$(echo "$RESPONSE" | grep -o '"IpfsHash":"[^"]*"' | cut -d'"' -f4)
+          
+          if [ -z "$CID" ]; then
+            echo "Error: Failed to get CID"
+            exit 1
           fi
-
-      # 7️⃣ Make CID publicly available by connecting to public gateways
-      - name: Announce to IPFS network
-        run: |
-          echo "Announcing CID to IPFS network..."
           
-          # Try to fetch from public gateway to help propagate
-          timeout 30 curl -I "https://ipfs.io/ipfs/${{ steps.ipfs_add.outputs.cid }}" || true
-          
-          echo "CID announced to network"
+          echo "Success! CID: $CID"
+          echo "cid=$CID" >> $GITHUB_OUTPUT
 
-      # 8️⃣ Show final URLs
+      # 4️⃣ Show final URLs
       - name: Show site URLs
         run: |
           echo "=========================================="
           echo "✅ Deployment Successful!"
           echo "=========================================="
-          echo "CID: ${{ steps.ipfs_add.outputs.cid }}"
+          echo "CID: ${{ steps.pinata_upload.outputs.cid }}"
           echo ""
           echo "Access your site at:"
-          echo "🔗 https://gateway.pinata.cloud/ipfs/${{ steps.ipfs_add.outputs.cid }}/index.html"
-          echo "🔗 https://${{ steps.ipfs_add.outputs.cid }}.ipfs.dweb.link/"
-          echo "🔗 https://ipfs.io/ipfs/${{ steps.ipfs_add.outputs.cid }}/"
-          echo ""
-          echo "Note: It may take a few moments for the content to propagate"
+          echo "🔗 https://gateway.pinata.cloud/ipfs/${{ steps.pinata_upload.outputs.cid }}"
+          echo "🔗 https://${{ steps.pinata_upload.outputs.cid }}.ipfs.dweb.link/"
+          echo "🔗 https://ipfs.io/ipfs/${{ steps.pinata_upload.outputs.cid }}"
           echo "=========================================="
