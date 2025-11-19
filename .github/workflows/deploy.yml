@@ -1,14 +1,14 @@
 name: Deploy HTML Site to IPFS & Pinata
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Manual trigger
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repo
+      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -22,7 +22,7 @@ jobs:
       - name: Init IPFS repo
         run: ipfs init
 
-      # 4️⃣ Copy only files we want to deploy
+      # 4️⃣ Prepare site folder (only files we want)
       - name: Prepare site folder
         run: |
           rm -rf site
@@ -51,8 +51,15 @@ jobs:
             -d "{\"hashToPin\":\"${{ steps.ipfs_add.outputs.cid }}\",\"pinataMetadata\":{\"name\":\"site-folder\"}}")
           echo "Pinata response: $RESPONSE"
 
-      # 7️⃣ Show URL
-      - name: Show site URL
+      # 7️⃣ Output multiple gateway URLs
+      - name: Show multiple gateway URLs
         run: |
-          echo "Your site folder CID: ${{ steps.ipfs_add.outputs.cid }}"
-          echo "Open in browser: https://${{ steps.ipfs_add.outputs.cid }}.ipfs.dweb.link/"
+          CID=${{ steps.ipfs_add.outputs.cid }}
+          echo "Your site folder CID: $CID"
+          echo "Test your site on multiple gateways:"
+          echo "dweb.link        : https://$CID.ipfs.dweb.link/"
+          echo "ipfs.io          : https://ipfs.io/ipfs/$CID/"
+          echo "Cloudflare       : https://cloudflare-ipfs.com/ipfs/$CID/"
+          echo "Infura           : https://ipfs.infura.io/ipfs/$CID/"
+          echo "Pinata Gateway   : https://gateway.pinata.cloud/ipfs/$CID/"
+          echo "Temporal Gateway : https://gateway.temporal.cloud/ipfs/$CID/"
