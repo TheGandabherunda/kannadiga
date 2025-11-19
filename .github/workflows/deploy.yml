@@ -20,7 +20,7 @@ jobs:
 
       # 3️⃣ Install requests library
       - name: Install dependencies
-        run: pip install requests requests-toolbelt
+        run: pip install requests
 
       # 4️⃣ Verify site folder exists
       - name: Verify site folder
@@ -42,7 +42,6 @@ jobs:
           import json
           import requests
           from pathlib import Path
-          from requests_toolbelt.multipart.encoder import MultipartEncoder
 
           def upload_folder_to_pinata(folder_path, jwt_token):
               url = "https://api.pinata.cloud/pinning/pinFileToIPFS"
@@ -51,29 +50,28 @@ jobs:
               }
           
               folder = Path(folder_path)
-              fields = {}
+              files = []
               file_objects = []
           
-              # Collect all files with their relative paths
+              # Collect all files with their relative paths - all under 'file' field
               for file_path in folder.rglob('*'):
                   if file_path.is_file():
                       relative_path = str(file_path.relative_to(folder))
-                      # Use relative path as the key to preserve structure
                       file_obj = open(file_path, 'rb')
                       file_objects.append(file_obj)
-                      fields[f'file_{len(fields)}'] = (relative_path, file_obj, 'application/octet-stream')
+                      # All files must use 'file' as the field name with filename in tuple
+                      files.append(('file', (relative_path, file_obj, 'application/octet-stream')))
           
-              # Add metadata - wrapWithDirectory creates the folder structure
-              fields['pinataMetadata'] = (None, json.dumps({"name": "site-folder"}), 'application/json')
-              fields['pinataOptions'] = (None, json.dumps({"wrapWithDirectory": True}), 'application/json')
+              print(f"Uploading {len(files)} files to Pinata...")
           
-              print(f"Uploading {len(file_objects)} files to Pinata...")
+              # Prepare form data
+              data = {
+                  'pinataMetadata': json.dumps({"name": "site-folder"}),
+                  'pinataOptions': json.dumps({"wrapWithDirectory": True})
+              }
           
               try:
-                  multipart_data = MultipartEncoder(fields=fields)
-                  headers['Content-Type'] = multipart_data.content_type
-          
-                  response = requests.post(url, headers=headers, data=multipart_data)
+                  response = requests.post(url, headers=headers, files=files, data=data)
                   response.raise_for_status()
           
                   result = response.json()
