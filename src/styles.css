@@ -6,11 +6,10 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #ffffff;
+    background-color: #F2EFE5;
     font-family: sans-serif;
     overflow: hidden;
-    /* Subtle gradient for depth perception on the whole body */
-    background: radial-gradient(circle, #ffffff 0%, #f8f8f8 100%);
+    /*background: radial-gradient(circle, #F2EFE5 0%, #F2EFE5 100%); */
 }
 
 .container {
@@ -24,7 +23,6 @@ body {
 
 .logo-wrapper {
     position: relative;
-    /* Initial Color (Matches first color in JS array) */
     background-color: #FF0000;
     padding: 4px;
     display: inline-block;
