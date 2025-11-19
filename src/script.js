@@ -18,22 +18,58 @@ window.addEventListener('mousemove', (e) => {
 
     // Get updated rect (crucial because logo moves during onboarding)
     const logoRect = logoWrapper.getBoundingClientRect();
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
 
-    // Center of the logo in viewport coordinates
+    // 1. Calculate Center of the Logo (This is the anchor point)
     const logoCenterX = logoRect.left + logoRect.width / 2;
     const logoCenterY = logoRect.top + logoRect.height / 2;
 
-    // Calculate distance from cursor to logo center
+    // 2. Local calculations for the Leather Container Shine (This was already perfect, keeping as is)
+    const localX = e.clientX - logoRect.left;
+    const localY = e.clientY - logoRect.top;
+
+    logoWrapper.style.setProperty('--light-x', `${localX}px`);
+    logoWrapper.style.setProperty('--light-y', `${localY}px`);
+
+    // 3. Calculate Distance from Cursor to Logo Center
     const distX = e.clientX - logoCenterX;
     const distY = e.clientY - logoCenterY;
+
+    // --- THE FIX: Restore Original "Feel" but aligned to Logo ---
+    // The original code mapped the full Window Width to 3x the SVG Width.
+    // We calculate that ratio (sensitivity) and apply it to the distance from the logo center.
+
+    const sensitivityX = (vbWidth * 3) / window.innerWidth;
+    const sensitivityY = (vbHeight * 3) / window.innerHeight;
+
+    // Apply this offset to the default SVG center (36, 48)
+    // This replicates the "Global" lighting feel but makes it relative to the logo's position.
+    const svgX = 36 + (distX * sensitivityX);
+    const svgY = 48 + (distY * sensitivityY);
+
+    // Update SVG Lights
+    lightSource.setAttribute('x', svgX);
+    lightSource.setAttribute('y', svgY);
+    diffuseSource.setAttribute('x', svgX);
+    diffuseSource.setAttribute('y', svgY);
+
+    // 4. Update Drop Shadow (Synced to relative position)
+    // Original logic: (0.5 - xPercent) * 8.
+    // New logic: Same ratio, but using distance from logo center.
+    const shadowX = ((logoCenterX - e.clientX) / window.innerWidth) * 8;
+    const shadowY = ((logoCenterY - e.clientY) / window.innerHeight) * 8;
+
+    shadowFilter.setAttribute('dx', shadowX);
+    shadowFilter.setAttribute('dy', shadowY);
+
+    // 5. Intensity Calculations (Kept exactly as original)
     const distance = Math.sqrt(distX * distX + distY * distY);
 
-    // Dynamic maxDistance based on viewport size to ensure corners work
+    // Dynamic maxDistance based on viewport size
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
     const maxDistance = Math.sqrt(windowWidth * windowWidth + windowHeight * windowHeight) / 1.5;
 
-    // Calculate intensity (0 to 1) based on distance
+    // Calculate intensity (0 to 1)
     let intensity = Math.max(0, 1 - (distance / maxDistance));
 
     // Update Glow Opacity
@@ -45,44 +81,13 @@ window.addEventListener('mousemove', (e) => {
 
     const currentSpecular = minSpecular + (baseSpecular - minSpecular) * intensity;
     specularElement.setAttribute('specularConstant', currentSpecular.toFixed(2));
-
-
-    // 1. Global calculations for the Medal 3D Effect (based on Window)
-    const xPercent = e.clientX / windowWidth;
-    const yPercent = e.clientY / windowHeight;
-
-    // Map window percentage to SVG coordinates
-    const svgX = xPercent * vbWidth * 3 - (vbWidth);
-    const svgY = yPercent * vbHeight * 3 - (vbHeight);
-
-    // Update SVG Lights
-    lightSource.setAttribute('x', svgX);
-    lightSource.setAttribute('y', svgY);
-    diffuseSource.setAttribute('x', svgX);
-    diffuseSource.setAttribute('y', svgY);
-
-    // Update SVG Drop Shadow
-    const centerX = 0.5;
-    const centerY = 0.5;
-    const shadowX = (centerX - xPercent) * 8;
-    const shadowY = (centerY - yPercent) * 8;
-    shadowFilter.setAttribute('dx', shadowX);
-    shadowFilter.setAttribute('dy', shadowY);
-
-    // 2. Local calculations for the Leather Container Shine
-    const localX = e.clientX - logoRect.left;
-    const localY = e.clientY - logoRect.top;
-
-    // Update CSS variables on the wrapper
-    logoWrapper.style.setProperty('--light-x', `${localX}px`);
-    logoWrapper.style.setProperty('--light-y', `${localY}px`);
 });
 
 // RESET TO DEFAULT ON MOUSE LEAVE (window)
 document.addEventListener('mouseleave', () => {
     if (!lightSource || !diffuseSource) return;
 
-    // 1. Reset SVG Lights to initial HTML values (Center)
+    // 1. Reset SVG Lights to center
     lightSource.setAttribute('x', 36);
     lightSource.setAttribute('y', 48);
     diffuseSource.setAttribute('x', 36);
