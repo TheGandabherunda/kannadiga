@@ -1,0 +1,89 @@
+body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #ffffff;
+    font-family: sans-serif;
+    overflow: hidden;
+    /* Subtle gradient for depth perception on the whole body */
+    background: radial-gradient(circle, #ffffff 0%, #f8f8f8 100%);
+}
+
+.container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none; /* Let clicks pass through to body if needed */
+}
+
+
+.logo-wrapper {
+    position: relative;
+    background-color: #FF0000;
+    padding: 4px;
+    display: inline-block;
+    line-height: 0;
+    box-shadow: none;
+
+    /* CSS Variables for the light position, updated by JS */
+    --light-x: 50%;
+    --light-y: 50%;
+    --glow-opacity: 0; /* Default to 0 (no glow) */
+
+    pointer-events: auto; /* Re-enable pointer events for the logo itself */
+}
+
+/* 1. Leather Texture Layer */
+.logo-wrapper::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    /* Use the uploaded leather image */
+    background-image: url('assets/leather-macro-shot.jpg');
+    /* Scale it down slightly so the grain is visible on a small icon */
+    background-size: 150px auto;
+
+    /* The requested blend settings */
+    opacity: 0.4;
+    mix-blend-mode: luminosity;
+
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* 2. Subtle Light Reflection Layer (Leather Sheen) */
+.logo-wrapper::after {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    /* A soft white radial gradient that moves with the cursor variables */
+    background: radial-gradient(
+        circle 80px at var(--light-x) var(--light-y),
+        rgba(255, 255, 255, 0.4) 0%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    mix-blend-mode: screen; /* Softens the highlight */
+
+    /* Controlled by JS proximity now, not hover */
+    opacity: var(--glow-opacity);
+    transition: opacity 0.1s linear; /* Fast transition for responsiveness */
+
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Ensure SVG sits on top of the texture */
+svg {
+    position: relative;
+    z-index: 2;
+    width: 72px;
+    height: auto;
+    overflow: visible;
+    pointer-events: none;
+    display: block;
+}
