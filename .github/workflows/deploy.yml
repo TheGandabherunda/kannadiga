@@ -1,45 +1,60 @@
-name: Deploy HTML to Pinata (IPFS)
+name: Deploy HTML Site to Pinata (IPFS)
 
 on:
-  workflow_dispatch:   # Allows manual trigger from GitHub Actions tab
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout code
+      # 1️⃣ Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Install zip and jq
-      - name: Install zip and jq
+      # 2️⃣ Install IPFS CLI
+      - name: Install IPFS CLI
         run: |
-          sudo apt-get update
-          sudo apt-get install -y zip jq
+          curl -fsSL https://dist.ipfs.io/go-ipfs/v0.22.0/go-ipfs_v0.22.0_linux-amd64.tar.gz | tar -xz
+          sudo mv go-ipfs/ipfs /usr/local/bin/
 
-      # 3️⃣ Zip project folder
-      - name: Zip HTML project
-        run: |
-          rm -f site.zip
-          zip -r site.zip . -x ".git/*" ".github/*"
-          if [ ! -f "site.zip" ]; then echo "Zip failed!" && exit 1; fi
+      # 3️⃣ Init temporary IPFS repo
+      - name: Init IPFS repo
+        run: ipfs init
 
-      # 4️⃣ Upload to Pinata
-      - name: Upload to Pinata (JWT)
-        id: upload
+      # 4️⃣ Prepare folder to upload
+      - name: Prepare deploy folder
         run: |
-          RESPONSE=$(curl -s -X POST "https://api.pinata.cloud/pinning/pinFileToIPFS" \
+          rm -rf deploy_folder
+          mkdir deploy_folder
+          cp index.html deploy_folder/
+          cp -r assets deploy_folder/
+
+      # 5️⃣ Add folder to IPFS recursively
+      - name: Add folder to IPFS
+        id: ipfs_add
+        run: |
+          FOLDER_CID=$(ipfs add -r -Q deploy_folder)
+          echo "Folder CID: $FOLDER_CID"
+          echo "cid=$FOLDER_CID" >> $GITHUB_OUTPUT
+
+      # 6️⃣ Pin folder to Pinata
+      - name: Pin folder to Pinata
+        run: |
+          RESPONSE=$(curl -s -X POST "https://api.pinata.cloud/pinning/pinByHash" \
             -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}" \
-            -F file=@site.zip)
+            -H "Content-Type: application/json" \
+            -d "{\"hashToPin\":\"${{ steps.ipfs_add.outputs.cid }}\",\"pinataMetadata\":{\"name\":\"html-site-folder\"}}")
           echo "Pinata response: $RESPONSE"
-          CID=$(echo "$RESPONSE" | jq -r '.IpfsHash')
-          if [ "$CID" = "null" ] || [ -z "$CID" ]; then
-            echo "Failed to get CID from Pinata!" && exit 1
-          fi
-          echo "cid=$CID" >> $GITHUB_OUTPUT
 
-      # 5️⃣ Show CID
-      - name: Show CID
+      # 7️⃣ Show working URLs
+      - name: Show gateway URLs
         run: |
-          echo "New IPFS CID: ${{ steps.upload.outputs.cid }}"
+          CID=${{ steps.ipfs_add.outputs.cid }}
+          echo "Folder CID: $CID"
+          echo "dweb.link        : https://$CID.ipfs.dweb.link/"
+          echo "ipfs.io          : https://ipfs.io/ipfs/$CID/"
+          echo "Cloudflare       : https://cloudflare-ipfs.com/ipfs/$CID/"
+          echo "Infura           : https://ipfs.infura.io/ipfs/$CID/"
+          echo "Pinata Gateway   : https://gateway.pinata.cloud/ipfs/$CID/"
+          echo "Temporal Gateway : https://gateway.temporal.cloud/ipfs/$CID/"
