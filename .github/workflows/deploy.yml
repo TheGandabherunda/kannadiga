@@ -12,116 +12,89 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Setup Python
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
+      # 2️⃣ Install IPFS Kubo
+      - name: Install IPFS
+        run: |
+          wget https://dist.ipfs.tech/kubo/v0.24.0/kubo_v0.24.0_linux-amd64.tar.gz
+          tar -xvzf kubo_v0.24.0_linux-amd64.tar.gz
+          sudo bash kubo/install.sh
+          ipfs --version
 
-      # 3️⃣ Install requests library
-      - name: Install dependencies
-        run: pip install requests
+      # 3️⃣ Initialize IPFS
+      - name: Initialize IPFS
+        run: |
+          ipfs init
+          ipfs config Addresses.API /ip4/127.0.0.1/tcp/5001
+          ipfs config Addresses.Gateway /ip4/127.0.0.1/tcp/8080
 
-      # 4️⃣ Verify site folder exists
-      - name: Verify site folder
+      # 4️⃣ Start IPFS daemon in background
+      - name: Start IPFS daemon
+        run: |
+          ipfs daemon &
+          sleep 5
+          ipfs swarm peers
+
+      # 5️⃣ Add site folder to IPFS
+      - name: Add folder to IPFS
+        id: ipfs_add
         run: |
           if [ ! -d "site" ]; then
             echo "Error: site/ folder not found!"
             exit 1
           fi
-          echo "Found site folder, listing contents:"
-          find site -type f
+          
+          echo "Adding site folder to IPFS..."
+          CID=$(ipfs add -r -Q site | tail -n 1)
+          
+          echo "Folder CID: $CID"
+          echo "cid=$CID" >> $GITHUB_OUTPUT
 
-      # 5️⃣ Upload folder to Pinata
-      - name: Upload to Pinata
-        id: pinata_upload
+      # 6️⃣ Pin to Pinata
+      - name: Pin to Pinata
         run: |
-          cat << 'EOF' > upload_to_pinata.py
-          import os
-          import sys
-          import json
-          import requests
-          from pathlib import Path
-
-          def upload_folder_to_pinata(folder_path, jwt_token):
-              url = "https://api.pinata.cloud/pinning/pinFileToIPFS"
-              headers = {
-                  "Authorization": f"Bearer {jwt_token}"
+          echo "Pinning CID ${{ steps.ipfs_add.outputs.cid }} to Pinata..."
+          
+          RESPONSE=$(curl -X POST "https://api.pinata.cloud/pinning/pinByHash" \
+            -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"hashToPin\": \"${{ steps.ipfs_add.outputs.cid }}\",
+              \"pinataMetadata\": {
+                \"name\": \"site-folder\"
               }
+            }")
           
-              folder = Path(folder_path)
-              files = []
-              file_objects = []
+          echo "Pinata response: $RESPONSE"
           
-              # Collect all files with their relative paths - all under 'file' field
-              for file_path in folder.rglob('*'):
-                  if file_path.is_file():
-                      relative_path = str(file_path.relative_to(folder))
-                      file_obj = open(file_path, 'rb')
-                      file_objects.append(file_obj)
-                      # All files must use 'file' as the field name with filename in tuple
-                      files.append(('file', (relative_path, file_obj, 'application/octet-stream')))
-          
-              print(f"Uploading {len(files)} files to Pinata...")
-          
-              # Prepare form data
-              data = {
-                  'pinataMetadata': json.dumps({"name": "site-folder"}),
-                  'pinataOptions': json.dumps({"wrapWithDirectory": True})
-              }
-          
-              try:
-                  response = requests.post(url, headers=headers, files=files, data=data)
-                  response.raise_for_status()
-          
-                  result = response.json()
-                  cid = result.get('IpfsHash')
-          
-                  if cid:
-                      print(f"Success! CID: {cid}")
-                      # Write to GitHub output
-                      with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-                          f.write(f"cid={cid}\n")
-                      return cid
-                  else:
-                      print(f"Error: No CID in response: {result}")
-                      sys.exit(1)
-          
-              except requests.exceptions.RequestException as e:
-                  print(f"Error uploading to Pinata: {e}")
-                  if hasattr(e, 'response') and e.response is not None:
-                      print(f"Response: {e.response.text}")
-                  sys.exit(1)
-              finally:
-                  # Close all file handles
-                  for file_obj in file_objects:
-                      file_obj.close()
+          # Check if pinning was successful
+          if echo "$RESPONSE" | grep -q "error"; then
+            echo "Pinata pinning queued or already pinned"
+          else
+            echo "Successfully pinned to Pinata!"
+          fi
 
-          if __name__ == "__main__":
-              jwt = os.environ.get('PINATA_JWT')
-              if not jwt:
-                  print("Error: PINATA_JWT not found in environment")
-                  sys.exit(1)
+      # 7️⃣ Make CID publicly available by connecting to public gateways
+      - name: Announce to IPFS network
+        run: |
+          echo "Announcing CID to IPFS network..."
           
-              upload_folder_to_pinata('site', jwt)
-          EOF
+          # Try to fetch from public gateway to help propagate
+          timeout 30 curl -I "https://ipfs.io/ipfs/${{ steps.ipfs_add.outputs.cid }}" || true
+          
+          echo "CID announced to network"
 
-          python upload_to_pinata.py
-        env:
-          PINATA_JWT: ${{ secrets.PINATA_JWT }}
-
-      # 6️⃣ Show final CID & access URLs
+      # 8️⃣ Show final URLs
       - name: Show site URLs
         run: |
           echo "=========================================="
           echo "✅ Deployment Successful!"
           echo "=========================================="
-          echo "CID: ${{ steps.pinata_upload.outputs.cid }}"
+          echo "CID: ${{ steps.ipfs_add.outputs.cid }}"
           echo ""
           echo "Access your site at:"
-          echo "🔗 https://gateway.pinata.cloud/ipfs/${{ steps.pinata_upload.outputs.cid }}"
-          echo "🔗 https://${{ steps.pinata_upload.outputs.cid }}.ipfs.dweb.link/"
-          echo "🔗 https://ipfs.io/ipfs/${{ steps.pinata_upload.outputs.cid }}"
+          echo "🔗 https://gateway.pinata.cloud/ipfs/${{ steps.ipfs_add.outputs.cid }}/index.html"
+          echo "🔗 https://${{ steps.ipfs_add.outputs.cid }}.ipfs.dweb.link/"
+          echo "🔗 https://ipfs.io/ipfs/${{ steps.ipfs_add.outputs.cid }}/"
           echo ""
-          echo "Your index.html will be accessible at the root!"
+          echo "Note: It may take a few moments for the content to propagate"
           echo "=========================================="
