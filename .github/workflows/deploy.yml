@@ -1,32 +1,30 @@
-name: Deploy HTML to IPFS via Pinata
+name: Deploy to IPFS
 
 on:
-  workflow_dispatch:   # Manual trigger
+  workflow_dispatch:  # Manual trigger
   push:
     branches:
-      - main          # Optional: deploy automatically on push to main
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
 
-      - name: Install dependencies for custom action
-        run: |
-          cd .github/actions/deploy-ipfs
-          npm ci
+      - name: Install dependencies
+        run: npm install
 
-      - name: Deploy to Pinata
+      - name: Deploy to IPFS
         uses: ./.github/actions/deploy-ipfs
         with:
           pinata-jwt: ${{ secrets.PINATA_JWT }}
           source-dir: './src'
-          pin-name: 'My Project - ${{ github.sha }}'
+          pin-name: 'Kannadiga Site - ${{ github.sha }}'
