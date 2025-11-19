@@ -4,6 +4,7 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import FormData from "form-data";
+import axios from "axios";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -27,12 +28,7 @@ async function uploadDirectoryToPinata() {
     // Create FormData
     const formData = new FormData();
 
-    // First, add the pinataMetadata - THIS MUST COME FIRST!
-    formData.append('pinataMetadata', JSON.stringify({
-      name: baseFolderName
-    }));
-
-    // Then add all the files
+    // Add all the files with their relative paths
     function addFilesToFormData(dir, baseDir = dir) {
       const items = fs.readdirSync(dir, { withFileTypes: true });
 
@@ -57,23 +53,26 @@ async function uploadDirectoryToPinata() {
 
     addFilesToFormData(sourceDir);
 
-    console.log("🚀 Uploading to Pinata...");
+    // Add metadata
+    formData.append('pinataMetadata', JSON.stringify({
+      name: baseFolderName
+    }));
 
-    const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${pinataJwt}`,
-        ...formData.getHeaders()
-      },
-      body: formData
-    });
+    console.log("🚀 Uploading to Pinata using axios...");
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Upload failed: ${response.status} - ${errorText}`);
-    }
+    const response = await axios.post(
+      'https://api.pinata.cloud/pinning/pinFileToIPFS',
+      formData,
+      {
+        maxBodyLength: Infinity,
+        headers: {
+          'Authorization': `Bearer ${pinataJwt}`,
+          ...formData.getHeaders()
+        }
+      }
+    );
 
-    const upload = await response.json();
+    const upload = response.data;
 
     console.log("✅ Upload successful!");
     console.log(`📌 CID: ${upload.IpfsHash}`);
@@ -103,6 +102,10 @@ async function uploadDirectoryToPinata() {
 
   } catch (error) {
     console.error("❌ Deployment failed:", error);
+    if (error.response) {
+      console.error("Response status:", error.response.status);
+      console.error("Response data:", JSON.stringify(error.response.data, null, 2));
+    }
     console.error("Error details:", error.stack);
     core.setFailed(error.message);
   }
