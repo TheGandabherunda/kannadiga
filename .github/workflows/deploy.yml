@@ -1,14 +1,14 @@
 name: Deploy HTML Site to IPFS & Pinata
 
 on:
-  workflow_dispatch:  # manual trigger
+  workflow_dispatch:  # Manual trigger
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repo
+      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -36,10 +36,14 @@ jobs:
           echo "Folder CID: $FOLDER_CID"
           echo "cid=$FOLDER_CID" >> $GITHUB_OUTPUT
 
-      # 5️⃣ Optional: Pin folder to Pinata
+      # 5️⃣ Optional: Pin folder to Pinata if JWT is set
       - name: Pin folder to Pinata
-        if: ${{ secrets.PINATA_JWT != '' }}
         run: |
+          if [ -z "${{ secrets.PINATA_JWT }}" ]; then
+            echo "No Pinata JWT found, skipping pin."
+            exit 0
+          fi
+
           echo "Uploading folder CID ${{ steps.ipfs_add.outputs.cid }} to Pinata..."
           RESPONSE=$(curl -s -X POST "https://api.pinata.cloud/pinning/pinByHash" \
             -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}" \
