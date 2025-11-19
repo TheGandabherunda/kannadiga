@@ -1,7 +1,7 @@
 name: Deploy HTML Site to Pinata (IPFS)
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Allows manual trigger
 
 jobs:
   deploy:
@@ -22,15 +22,15 @@ jobs:
       - name: Init IPFS repo
         run: ipfs init
 
-      # 4️⃣ Add files to IPFS directly at root
-      - name: Add files to IPFS
+      # 4️⃣ Add src/ folder to IPFS
+      - name: Add src folder to IPFS
         id: ipfs_add
         run: |
-          FOLDER_CID=$(ipfs add -r -Q index.html assets)
-          echo "Folder CID: $FOLDER_CID"
-          echo "cid=$FOLDER_CID" >> $GITHUB_OUTPUT
+          CID=$(ipfs add -r -Q src)
+          echo "Folder CID: $CID"
+          echo "cid=$CID" >> $GITHUB_OUTPUT
 
-      # 5️⃣ Pin folder to Pinata safely
+      # 5️⃣ Pin folder to Pinata
       - name: Pin folder to Pinata
         env:
           PINATA_JWT: ${{ secrets.PINATA_JWT }}
@@ -43,10 +43,10 @@ jobs:
           RESPONSE=$(curl -s -X POST "https://api.pinata.cloud/pinning/pinByHash" \
             -H "Authorization: Bearer $PINATA_JWT" \
             -H "Content-Type: application/json" \
-            -d "{\"hashToPin\":\"${{ steps.ipfs_add.outputs.cid }}\",\"pinataMetadata\":{\"name\":\"html-site-folder\"}}")
+            -d "{\"hashToPin\":\"${{ steps.ipfs_add.outputs.cid }}\",\"pinataMetadata\":{\"name\":\"html-site-src-folder\"}}")
           echo "Pinata response: $RESPONSE"
 
-      # 6️⃣ Show working gateway URLs
+      # 6️⃣ Show IPFS gateway URLs
       - name: Show gateway URLs
         run: |
           CID=${{ steps.ipfs_add.outputs.cid }}
