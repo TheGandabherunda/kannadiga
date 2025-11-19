@@ -31,7 +31,7 @@ jobs:
             exit 1
           fi
 
-          # Recursively add folder and get single CID
+          # Recursively add folder and get single folder CID
           FOLDER_CID=$(ipfs add -r -Q site)
           echo "Folder CID: $FOLDER_CID"
           echo "cid=$FOLDER_CID" >> $GITHUB_OUTPUT
