@@ -20,14 +20,15 @@
 
 <script>
     // --- PRELOADER LOGIC START ---
-    // The specific colors you requested
+    // The specific colors requested
     const preloadColors = ['#FF0000', '#FFCF03', '#00C907', '#9A00EB', '#F2059F'];
-    let colorIndex = 0;
+    // Start at 1 because CSS already sets the first color (#FF0000)
+    let colorIndex = 1;
     let preloadInterval;
     const logoWrapperEl = document.getElementById('logoWrapper');
 
     function startPreloader() {
-        // Change color every 500ms (adjust speed here if needed)
+        // Change color every 500ms
         preloadInterval = setInterval(() => {
             // Set current color
             logoWrapperEl.style.backgroundColor = preloadColors[colorIndex];
@@ -47,6 +48,7 @@
 
 
     // Standard Fetch and Inject SVG
+    // Note: Ensure 'assets/metal.svg' exists in your folder structure
     fetch('assets/metal.svg')
         .then(response => response.text())
         .then(svgContent => {
@@ -64,7 +66,7 @@
         })
         .catch(err => {
             console.error('Error loading SVG:', err);
-            // Safety: Stop preloader if error occurs
+            // Safety: Stop preloader if error occurs so it doesn't cycle forever
             stopPreloader();
         });
 </script>

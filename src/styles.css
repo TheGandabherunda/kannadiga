@@ -24,6 +24,7 @@ body {
 
 .logo-wrapper {
     position: relative;
+    /* Initial Color (Matches first color in JS array) */
     background-color: #FF0000;
     padding: 4px;
     display: inline-block;
