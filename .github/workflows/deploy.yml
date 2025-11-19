@@ -1,4 +1,4 @@
-name: Deploy HTML Site to IPFS
+name: Deploy HTML Site to IPFS + Pinata
 
 on:
   workflow_dispatch:  # Manual trigger
@@ -12,69 +12,149 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Setup Node.js
+      # 2️⃣ Setup Node.js and install Helia (lightweight IPFS)
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20'
 
-      # 3️⃣ Install ipfs-car CLI
-      - name: Install ipfs-car
-        run: npm install -g ipfs-car
-
-      # 4️⃣ Pack site folder as CAR file
-      - name: Create CAR file from site folder
-        id: create_car
+      # 3️⃣ Create upload script using Helia
+      - name: Create upload script
         run: |
-          echo "Creating CAR file from site folder..."
-          ipfs-car pack site --output site.car
-          
-          if [ ! -f "site.car" ]; then
-            echo "CAR file creation failed!"
-            exit 1
-          fi
-          
-          echo "CAR file created:"
-          ls -lh site.car
-          
-          # Get the root CID
-          CID=$(ipfs-car roots site.car)
-          echo "Root CID: $CID"
-          echo "cid=$CID" >> $GITHUB_OUTPUT
+          cat << 'SCRIPT_EOF' > upload.mjs
+          import { createHelia } from 'helia'
+          import { unixfs } from '@helia/unixfs'
+          import { FsBlockstore } from 'blockstore-fs'
+          import fs from 'fs'
+          import path from 'path'
 
-      # 5️⃣ Upload CAR to Pinata
-      - name: Upload to Pinata
-        run: |
-          echo "Uploading CAR file to Pinata..."
-          
-          RESPONSE=$(curl -s -X POST "https://api.pinata.cloud/pinning/pinFileToIPFS" \
-            -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}" \
-            -F "file=@site.car" \
-            -F "pinataMetadata={\"name\":\"site-folder\"}")
-          
-          echo "Pinata response: $RESPONSE"
-          
-          PINATA_CID=$(echo "$RESPONSE" | jq -r '.IpfsHash')
-          
-          if [ "$PINATA_CID" != "null" ] && [ -n "$PINATA_CID" ]; then
-            echo "✅ Successfully uploaded and pinned to Pinata!"
-            echo "Pinata CID: $PINATA_CID"
-          else
-            echo "⚠️ Pinata upload may have failed, but your content CID is still valid"
-          fi
+          async function addDirectory(heliaFs, dirPath, parentPath = '') {
+            const entries = fs.readdirSync(dirPath)
+            const files = []
 
-      # 6️⃣ Show access URLs
+            for (const entry of entries) {
+              const fullPath = path.join(dirPath, entry)
+              const stat = fs.statSync(fullPath)
+              const relativePath = path.join(parentPath, entry)
+
+              if (stat.isDirectory()) {
+                const dirCid = await addDirectory(heliaFs, fullPath, relativePath)
+                files.push({ path: relativePath, content: dirCid })
+              } else {
+                const content = fs.readFileSync(fullPath)
+                files.push({ path: relativePath, content })
+              }
+            }
+
+            // Add all files
+            const cid = await heliaFs.addAll(files.map(f => ({
+              path: f.path,
+              content: f.content
+            })), { wrapWithDirectory: false })
+
+            let lastCid
+            for await (const entry of cid) {
+              lastCid = entry.cid
+            }
+          
+            return lastCid
+          }
+
+          async function main() {
+            console.log('Initializing Helia IPFS node...')
+          
+            const blockstore = new FsBlockstore('./ipfs-data')
+            const helia = await createHelia({ blockstore })
+            const heliaFs = unixfs(helia)
+
+            console.log('Adding site folder to IPFS...')
+          
+            // Add all files with their paths
+            const files = []
+            function collectFiles(dir, base = '') {
+              const entries = fs.readdirSync(dir)
+              for (const entry of entries) {
+                const fullPath = path.join(dir, entry)
+                const stat = fs.statSync(fullPath)
+                const relativePath = base ? path.join(base, entry) : entry
+          
+                if (stat.isFile()) {
+                  files.push({
+                    path: relativePath,
+                    content: fs.readFileSync(fullPath)
+                  })
+                } else if (stat.isDirectory()) {
+                  collectFiles(fullPath, relativePath)
+                }
+              }
+            }
+
+            collectFiles('./site')
+          
+            console.log(`Found ${files.length} files`)
+          
+            let rootCid
+            for await (const entry of heliaFs.addAll(files, { 
+              wrapWithDirectory: true 
+            })) {
+              console.log(`Added: ${entry.path || 'root'} - ${entry.cid}`)
+              if (!entry.path) {
+                rootCid = entry.cid
+              }
+            }
+
+            console.log(`\nRoot CID: ${rootCid}`)
+          
+            // Write to GitHub output
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `cid=${rootCid}\n`)
+          
+            // Pin to Pinata
+            console.log('\nPinning to Pinata...')
+            const response = await fetch('https://api.pinata.cloud/pinning/pinByHash', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${process.env.PINATA_JWT}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                hashToPin: rootCid.toString(),
+                pinataMetadata: { name: 'site-folder' }
+              })
+            })
+
+            const result = await response.json()
+            console.log('Pinata response:', result)
+
+            await helia.stop()
+          }
+
+          main().catch(console.error)
+          SCRIPT_EOF
+
+      # 4️⃣ Install Helia
+      - name: Install Helia
+        run: npm install helia @helia/unixfs blockstore-fs
+
+      # 5️⃣ Upload to IPFS
+      - name: Add to IPFS and pin to Pinata
+        id: ipfs_upload
+        env:
+          PINATA_JWT: ${{ secrets.PINATA_JWT }}
+        run: node upload.mjs
+
+      # 6️⃣ Show URLs
       - name: Show site URLs
         run: |
           echo "=========================================="
           echo "✅ Deployment Successful!"
           echo "=========================================="
-          echo "CID: ${{ steps.create_car.outputs.cid }}"
+          echo "CID: ${{ steps.ipfs_upload.outputs.cid }}"
           echo ""
           echo "Access your LIVE WEBSITE at:"
-          echo "🔗 https://ipfs.io/ipfs/${{ steps.create_car.outputs.cid }}/"
-          echo "🔗 https://${{ steps.create_car.outputs.cid }}.ipfs.dweb.link/"
-          echo "🔗 https://gateway.pinata.cloud/ipfs/${{ steps.create_car.outputs.cid }}/"
+          echo "🔗 https://ipfs.io/ipfs/${{ steps.ipfs_upload.outputs.cid }}/"
+          echo "🔗 https://${{ steps.ipfs_upload.outputs.cid }}.ipfs.dweb.link/"
+          echo "🔗 https://gateway.pinata.cloud/ipfs/${{ steps.ipfs_upload.outputs.cid }}/"
           echo ""
           echo "✨ Your index.html will render automatically!"
+          echo "✨ Pinned to Pinata for persistence!"
           echo "=========================================="
