@@ -1,47 +1,51 @@
 name: Deploy HTML to Pinata (IPFS)
 
 on:
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch:   # Manual trigger
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repo
+      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Install zip and jq
-      - name: Install zip and jq
+      # 2️⃣ Install jq
+      - name: Install jq
         run: |
           sudo apt-get update
-          sudo apt-get install -y zip jq
+          sudo apt-get install -y jq
 
-      # 3️⃣ Zip only the site folder
-      - name: Zip site folder
-        run: |
-          rm -f site.zip
-          cd site
-          zip -r ../site.zip .
-          cd ..
-          if [ ! -f "site.zip" ]; then echo "Zip failed!" && exit 1; fi
-
-      # 4️⃣ Upload to Pinata
-      - name: Upload to Pinata (JWT)
+      # 3️⃣ Upload all files in site/ folder to Pinata recursively
+      - name: Upload site folder to Pinata
         id: upload
         run: |
-          RESPONSE=$(curl -s -X POST "https://api.pinata.cloud/pinning/pinFileToIPFS" \
-            -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}" \
-            -F file=@site.zip)
+          echo "Preparing file list..."
+          FILES=$(find site -type f)
+          
+          # Construct curl arguments for all files
+          CURL_ARGS=""
+          for FILE in $FILES; do
+            CURL_ARGS="$CURL_ARGS -F file=@$FILE"
+          done
+          
+          # Upload to Pinata
+          RESPONSE=$(eval curl -s -X POST "https://api.pinata.cloud/pinning/pinFileToIPFS" \
+            -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}" $CURL_ARGS)
+          
           echo "Pinata response: $RESPONSE"
+
           CID=$(echo "$RESPONSE" | jq -r '.IpfsHash')
+
           if [ "$CID" = "null" ] || [ -z "$CID" ]; then
             echo "Failed to get CID from Pinata!" && exit 1
           fi
+
           echo "cid=$CID" >> $GITHUB_OUTPUT
 
-      # 5️⃣ Show CID
+      # 4️⃣ Show CID
       - name: Show CID
         run: |
           echo "New IPFS CID: ${{ steps.upload.outputs.cid }}"
