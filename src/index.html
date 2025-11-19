@@ -31,6 +31,9 @@
 </head>
 <body>
 
+<!-- Custom Cursor Element -->
+<div id="custom-cursor"></div>
+
 <!-- LEFT TEXT: Kannada Identity -->
 <div class="loading-text-left">ಸಿರಿಗನ್ನಡಂ ಗೆಲ್ಗೆ . ಸಿರಿಗನ್ನಡಂ ಬಾಳ್ಗೆ</div>
 
@@ -213,14 +216,13 @@
             // 1. Inject content
             document.getElementById('logoWrapper').innerHTML = svgContent;
 
-            // 2. Load the interaction script (for mouse effects)
-            const script = document.createElement('script');
-            script.src = 'script.js';
-            document.body.appendChild(script);
-
-            // 3. Start the Entrance Animation
-            // We wait for SVG to be in DOM so it animates with the container
+            // 2. Start the Entrance Animation
             runIntroAnimation();
+
+            // 3. Initialize SVG Interaction (defined in script.js)
+            if (window.initSVGLights) {
+                window.initSVGLights();
+            }
         })
         .catch(err => {
             console.error('Error loading SVG:', err);
@@ -229,6 +231,9 @@
         });
 
 </script>
+
+<!-- Load external script normally so Custom Cursor works immediately -->
+<script src="script.js"></script>
 
 </body>
 </html>

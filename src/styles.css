@@ -1,3 +1,21 @@
+/* --- GLOBAL CURSOR RESET --- */
+* {
+    cursor: none !important;
+}
+
+/* --- TEXT SELECTION HIGHLIGHT --- */
+/* This makes selected text have a black background and white text */
+::selection {
+    background-color: #000000;
+    color: #FFFFFF;
+}
+
+/* Firefox support */
+::-moz-selection {
+    background-color: #000000;
+    color: #FFFFFF;
+}
+
 body {
     margin: 0;
     padding: 0;
@@ -10,6 +28,29 @@ body {
     font-family: sans-serif;
     overflow: hidden;
     position: relative;
+}
+
+/* --- CUSTOM CURSOR STYLING --- */
+#custom-cursor {
+    position: fixed;
+    top: 0;
+    left: 0;
+
+    /* Dimensions: Start 14x14 */
+    width: 14px;
+    height: 14px;
+
+    /* Color: White with Difference blending creates BLACK on light backgrounds
+       and INVERTED on dark elements */
+    background-color: #FFFFFF;
+    mix-blend-mode: difference;
+
+    pointer-events: none;
+    z-index: 9999;
+
+    /* Initial centering for GSAP */
+    transform: translate(-50%, -50%);
+    border-radius: 0; /* Square */
 }
 
 .container {
