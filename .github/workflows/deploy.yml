@@ -1,7 +1,7 @@
-name: Deploy HTML to IPFS
+name: Deploy HTML Site to IPFS & Pinata
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # manual trigger
 
 jobs:
   deploy:
@@ -20,23 +20,35 @@ jobs:
 
       # 3️⃣ Initialize temporary IPFS repo
       - name: Init IPFS repo
-        run: |
-          ipfs init
+        run: ipfs init
 
-      # 4️⃣ Upload site folder recursively
-      - name: Upload site folder to IPFS
-        id: upload
+      # 4️⃣ Add site folder recursively to IPFS
+      - name: Add site folder to IPFS
+        id: ipfs_add
         run: |
           if [ ! -d "site" ]; then
             echo "Error: site/ folder not found!"
             exit 1
           fi
 
-          # Recursively add folder to IPFS and get single folder CID
+          # Recursively add folder and get single CID
           FOLDER_CID=$(ipfs add -r -Q site)
+          echo "Folder CID: $FOLDER_CID"
           echo "cid=$FOLDER_CID" >> $GITHUB_OUTPUT
 
-      # 5️⃣ Show CID
-      - name: Show CID
+      # 5️⃣ Optional: Pin folder to Pinata
+      - name: Pin folder to Pinata
+        if: ${{ secrets.PINATA_JWT != '' }}
         run: |
-          echo "Your site folder CID: ${{ steps.upload.outputs.cid }}"
+          echo "Uploading folder CID ${{ steps.ipfs_add.outputs.cid }} to Pinata..."
+          RESPONSE=$(curl -s -X POST "https://api.pinata.cloud/pinning/pinByHash" \
+            -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"hashToPin\":\"${{ steps.ipfs_add.outputs.cid }}\",\"pinataMetadata\":{\"name\":\"site-folder\"}}")
+          echo "Pinata response: $RESPONSE"
+
+      # 6️⃣ Show final CID & URL
+      - name: Show site URL
+        run: |
+          echo "Your site folder CID: ${{ steps.ipfs_add.outputs.cid }}"
+          echo "View in browser via IPFS gateway: https://${{ steps.ipfs_add.outputs.cid }}.ipfs.dweb.link/"
