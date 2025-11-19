@@ -20,7 +20,7 @@ jobs:
 
       # 3️⃣ Install requests library
       - name: Install dependencies
-        run: pip install requests
+        run: pip install requests requests-toolbelt
 
       # 4️⃣ Verify site folder exists
       - name: Verify site folder
@@ -39,8 +39,10 @@ jobs:
           cat << 'EOF' > upload_to_pinata.py
           import os
           import sys
+          import json
           import requests
           from pathlib import Path
+          from requests_toolbelt.multipart.encoder import MultipartEncoder
 
           def upload_folder_to_pinata(folder_path, jwt_token):
               url = "https://api.pinata.cloud/pinning/pinFileToIPFS"
@@ -48,27 +50,30 @@ jobs:
                   "Authorization": f"Bearer {jwt_token}"
               }
           
-              files = []
               folder = Path(folder_path)
+              fields = {}
+              file_objects = []
           
               # Collect all files with their relative paths
               for file_path in folder.rglob('*'):
                   if file_path.is_file():
-                      relative_path = file_path.relative_to(folder)
-                      files.append(
-                          ('file', (str(relative_path), open(file_path, 'rb')))
-                      )
+                      relative_path = str(file_path.relative_to(folder))
+                      # Use relative path as the key to preserve structure
+                      file_obj = open(file_path, 'rb')
+                      file_objects.append(file_obj)
+                      fields[f'file_{len(fields)}'] = (relative_path, file_obj, 'application/octet-stream')
           
-              # Add metadata
-              data = {
-                  'pinataMetadata': '{"name":"site-folder"}',
-                  'pinataOptions': '{"wrapWithDirectory":true}'
-              }
+              # Add metadata - wrapWithDirectory creates the folder structure
+              fields['pinataMetadata'] = (None, json.dumps({"name": "site-folder"}), 'application/json')
+              fields['pinataOptions'] = (None, json.dumps({"wrapWithDirectory": True}), 'application/json')
           
-              print(f"Uploading {len(files)} files to Pinata...")
+              print(f"Uploading {len(file_objects)} files to Pinata...")
           
               try:
-                  response = requests.post(url, headers=headers, files=files, data=data)
+                  multipart_data = MultipartEncoder(fields=fields)
+                  headers['Content-Type'] = multipart_data.content_type
+          
+                  response = requests.post(url, headers=headers, data=multipart_data)
                   response.raise_for_status()
           
                   result = response.json()
@@ -91,7 +96,7 @@ jobs:
                   sys.exit(1)
               finally:
                   # Close all file handles
-                  for _, (_, file_obj) in files:
+                  for file_obj in file_objects:
                       file_obj.close()
 
           if __name__ == "__main__":
