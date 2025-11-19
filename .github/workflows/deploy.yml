@@ -1,4 +1,4 @@
-name: Deploy HTML Site to Pinata/IPFS
+name: Deploy HTML Site to Pinata (IPFS)
 
 on:
   workflow_dispatch:  # Manual trigger
@@ -12,54 +12,53 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Install IPFS Kubo
-      - name: Install IPFS Kubo
+      # 2️⃣ Install zip and jq
+      - name: Install zip and jq
         run: |
-          wget -q https://dist.ipfs.tech/kubo/v0.24.0/kubo_v0.24.0_linux-amd64.tar.gz
-          tar -xzf kubo_v0.24.0_linux-amd64.tar.gz
-          sudo bash kubo/install.sh
-          ipfs version
+          sudo apt-get update
+          sudo apt-get install -y zip jq
 
-      # 3️⃣ Add folder to IPFS locally and get CID
-      - name: Add to IPFS
-        id: ipfs_add
+      # 3️⃣ Zip ONLY the site folder contents
+      - name: Zip site folder
         run: |
-          ipfs init
-          ipfs add -r --quieter site > cid.txt
-          CID=$(cat cid.txt)
-          echo "CID: $CID"
-          echo "cid=$CID" >> $GITHUB_OUTPUT
+          rm -f site.zip
+          cd site
+          zip -r ../site.zip . 
+          cd ..
+          if [ ! -f "site.zip" ]; then 
+            echo "Zip failed!" 
+            exit 1
+          fi
+          echo "Zip created:"
+          ls -lh site.zip
 
-      # 4️⃣ Export as CAR file
-      - name: Export as CAR
+      # 4️⃣ Upload to Pinata
+      - name: Upload to Pinata (JWT)
+        id: upload
         run: |
-          ipfs dag export ${{ steps.ipfs_add.outputs.cid }} > site.car
-          ls -lh site.car
-
-      # 5️⃣ Upload CAR to Pinata
-      - name: Upload CAR to Pinata
-        run: |
-          echo "Uploading CAR file to Pinata..."
           RESPONSE=$(curl -s -X POST "https://api.pinata.cloud/pinning/pinFileToIPFS" \
             -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}" \
-            -F "file=@site.car")
-          
+            -F file=@site.zip)
           echo "Pinata response: $RESPONSE"
-          
-          PINATA_CID=$(echo "$RESPONSE" | jq -r '.IpfsHash')
-          echo "Pinata CID: $PINATA_CID"
+          CID=$(echo "$RESPONSE" | jq -r '.IpfsHash')
+          if [ "$CID" = "null" ] || [ -z "$CID" ]; then
+            echo "Failed to get CID from Pinata!" 
+            exit 1
+          fi
+          echo "cid=$CID" >> $GITHUB_OUTPUT
 
-      # 6️⃣ Show final URLs
+      # 5️⃣ Show URLs
       - name: Show site URLs
         run: |
           echo "=========================================="
           echo "✅ Deployment Successful!"
           echo "=========================================="
-          echo "CID: ${{ steps.ipfs_add.outputs.cid }}"
+          echo "CID: ${{ steps.upload.outputs.cid }}"
           echo ""
           echo "Access your site at:"
-          echo "🔗 https://ipfs.io/ipfs/${{ steps.ipfs_add.outputs.cid }}/"
-          echo "🔗 https://${{ steps.ipfs_add.outputs.cid }}.ipfs.dweb.link/"
+          echo "🔗 https://gateway.pinata.cloud/ipfs/${{ steps.upload.outputs.cid }}"
+          echo "🔗 https://${{ steps.upload.outputs.cid }}.ipfs.dweb.link/"
+          echo "🔗 https://ipfs.io/ipfs/${{ steps.upload.outputs.cid }}"
           echo ""
-          echo "Note: The CID is also pinned on Pinata"
+          echo "Your index.html should be at the root!"
           echo "=========================================="
