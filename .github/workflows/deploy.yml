@@ -36,7 +36,7 @@ jobs:
           echo "Folder CID: $FOLDER_CID"
           echo "cid=$FOLDER_CID" >> $GITHUB_OUTPUT
 
-      # 5️⃣ Optional: Pin folder to Pinata if JWT is set
+      # 5️⃣ Pin folder to Pinata if JWT is set
       - name: Pin folder to Pinata
         run: |
           if [ -z "${{ secrets.PINATA_JWT }}" ]; then
@@ -51,8 +51,8 @@ jobs:
             -d "{\"hashToPin\":\"${{ steps.ipfs_add.outputs.cid }}\",\"pinataMetadata\":{\"name\":\"site-folder\"}}")
           echo "Pinata response: $RESPONSE"
 
-      # 6️⃣ Show final CID & URL
+      # 6️⃣ Show final CID & browser URL
       - name: Show site URL
         run: |
           echo "Your site folder CID: ${{ steps.ipfs_add.outputs.cid }}"
-          echo "View in browser via IPFS gateway: https://${{ steps.ipfs_add.outputs.cid }}.ipfs.dweb.link/"
+          echo "Access your site at: https://${{ steps.ipfs_add.outputs.cid }}.ipfs.dweb.link/"
