@@ -1,59 +1,32 @@
-name: Deploy HTML Site to Pinata (IPFS)
+name: Deploy HTML to IPFS via Pinata
 
 on:
-  workflow_dispatch:  # Allows manual trigger
+  workflow_dispatch:   # Manual trigger
+  push:
+    branches:
+      - main          # Optional: deploy automatically on push to main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repository
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v3
 
-      # 2️⃣ Install IPFS CLI
-      - name: Install IPFS CLI
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies for custom action
         run: |
-          curl -fsSL https://dist.ipfs.io/go-ipfs/v0.22.0/go-ipfs_v0.22.0_linux-amd64.tar.gz | tar -xz
-          sudo mv go-ipfs/ipfs /usr/local/bin/
+          cd .github/actions/deploy-ipfs
+          npm ci
 
-      # 3️⃣ Initialize temporary IPFS repo
-      - name: Init IPFS repo
-        run: ipfs init
-
-      # 4️⃣ Add src/ folder to IPFS
-      - name: Add src folder to IPFS
-        id: ipfs_add
-        run: |
-          CID=$(ipfs add -r -Q src)
-          echo "Folder CID: $CID"
-          echo "cid=$CID" >> $GITHUB_OUTPUT
-
-      # 5️⃣ Pin folder to Pinata
-      - name: Pin folder to Pinata
-        env:
-          PINATA_JWT: ${{ secrets.PINATA_JWT }}
-        run: |
-          if [ -z "$PINATA_JWT" ]; then
-            echo "PINATA_JWT not set, skipping Pinata pin."
-            exit 0
-          fi
-
-          RESPONSE=$(curl -s -X POST "https://api.pinata.cloud/pinning/pinByHash" \
-            -H "Authorization: Bearer $PINATA_JWT" \
-            -H "Content-Type: application/json" \
-            -d "{\"hashToPin\":\"${{ steps.ipfs_add.outputs.cid }}\",\"pinataMetadata\":{\"name\":\"html-site-src-folder\"}}")
-          echo "Pinata response: $RESPONSE"
-
-      # 6️⃣ Show IPFS gateway URLs
-      - name: Show gateway URLs
-        run: |
-          CID=${{ steps.ipfs_add.outputs.cid }}
-          echo "Your site folder CID: $CID"
-          echo "dweb.link        : https://$CID.ipfs.dweb.link/"
-          echo "ipfs.io          : https://ipfs.io/ipfs/$CID/"
-          echo "Cloudflare       : https://cloudflare-ipfs.com/ipfs/$CID/"
-          echo "Infura           : https://ipfs.infura.io/ipfs/$CID/"
-          echo "Pinata Gateway   : https://gateway.pinata.cloud/ipfs/$CID/"
-          echo "Temporal Gateway : https://gateway.temporal.cloud/ipfs/$CID/"
+      - name: Deploy to Pinata
+        uses: ./.github/actions/deploy-ipfs
+        with:
+          pinata-jwt: ${{ secrets.PINATA_JWT }}
+          source-dir: './src'
+          pin-name: 'My Project - ${{ github.sha }}'
