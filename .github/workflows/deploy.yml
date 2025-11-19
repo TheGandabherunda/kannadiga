@@ -1,4 +1,4 @@
-name: Deploy HTML Site to IPFS & Pinata
+name: Deploy HTML Site to Pinata/IPFS
 
 on:
   workflow_dispatch:  # Manual trigger
@@ -12,47 +12,59 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Install IPFS CLI
-      - name: Install IPFS CLI
-        run: |
-          curl -fsSL https://dist.ipfs.io/go-ipfs/v0.22.0/go-ipfs_v0.22.0_linux-amd64.tar.gz | tar -xz
-          sudo mv go-ipfs/ipfs /usr/local/bin/
-
-      # 3️⃣ Initialize temporary IPFS repo
-      - name: Init IPFS repo
-        run: ipfs init
-
-      # 4️⃣ Add site folder recursively to IPFS
-      - name: Add site folder to IPFS
-        id: ipfs_add
+      # 2️⃣ Verify site folder exists
+      - name: Verify site folder
         run: |
           if [ ! -d "site" ]; then
             echo "Error: site/ folder not found!"
             exit 1
           fi
+          echo "Found site folder, listing contents:"
+          ls -R site/
 
-          # Recursively add folder and get single folder CID
-          FOLDER_CID=$(ipfs add -r -Q site)
-          echo "Folder CID: $FOLDER_CID"
-          echo "cid=$FOLDER_CID" >> $GITHUB_OUTPUT
-
-      # 5️⃣ Pin folder to Pinata if JWT is set
-      - name: Pin folder to Pinata
+      # 3️⃣ Create a tarball of the site folder
+      - name: Create tarball
         run: |
-          if [ -z "${{ secrets.PINATA_JWT }}" ]; then
-            echo "No Pinata JWT found, skipping pin."
-            exit 0
-          fi
+          tar -czf site.tar.gz -C site .
+          echo "Tarball created successfully"
+          ls -lh site.tar.gz
 
-          echo "Uploading folder CID ${{ steps.ipfs_add.outputs.cid }} to Pinata..."
-          RESPONSE=$(curl -s -X POST "https://api.pinata.cloud/pinning/pinByHash" \
+      # 4️⃣ Upload folder to Pinata using File Upload API
+      - name: Upload to Pinata
+        id: pinata_upload
+        run: |
+          echo "Uploading site folder to Pinata..."
+          
+          RESPONSE=$(curl -X POST "https://api.pinata.cloud/pinning/pinFileToIPFS" \
             -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"hashToPin\":\"${{ steps.ipfs_add.outputs.cid }}\",\"pinataMetadata\":{\"name\":\"site-folder\"}}")
+            -F "file=@site.tar.gz" \
+            -F "pinataMetadata={\"name\":\"site-folder\"}" \
+            -F "pinataOptions={\"wrapWithDirectory\":false}")
+          
           echo "Pinata response: $RESPONSE"
+          
+          # Extract CID from response
+          CID=$(echo $RESPONSE | grep -o '"IpfsHash":"[^"]*"' | cut -d'"' -f4)
+          
+          if [ -z "$CID" ]; then
+            echo "Error: Failed to extract CID from response"
+            echo "Full response: $RESPONSE"
+            exit 1
+          fi
+          
+          echo "Successfully uploaded! CID: $CID"
+          echo "cid=$CID" >> $GITHUB_OUTPUT
 
-      # 6️⃣ Show final CID & browser URL
-      - name: Show site URL
+      # 5️⃣ Show final CID & access URLs
+      - name: Show site URLs
         run: |
-          echo "Your site folder CID: ${{ steps.ipfs_add.outputs.cid }}"
-          echo "Access your site at: https://${{ steps.ipfs_add.outputs.cid }}.ipfs.dweb.link/"
+          echo "=========================================="
+          echo "✅ Deployment Successful!"
+          echo "=========================================="
+          echo "CID: ${{ steps.pinata_upload.outputs.cid }}"
+          echo ""
+          echo "Access your site at:"
+          echo "🔗 https://gateway.pinata.cloud/ipfs/${{ steps.pinata_upload.outputs.cid }}"
+          echo "🔗 https://${{ steps.pinata_upload.outputs.cid }}.ipfs.dweb.link/"
+          echo "🔗 https://ipfs.io/ipfs/${{ steps.pinata_upload.outputs.cid }}"
+          echo "=========================================="
