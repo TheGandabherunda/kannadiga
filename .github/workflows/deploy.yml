@@ -1,14 +1,14 @@
 name: Deploy HTML to Pinata (IPFS)
 
 on:
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch:   # Allows manual trigger from GitHub Actions tab
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repository
+      # 1️⃣ Checkout code
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -18,14 +18,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y zip jq
 
-      # 3️⃣ Zip project excluding .github and .idea
+      # 3️⃣ Zip project folder
       - name: Zip HTML project
         run: |
           rm -f site.zip
-          zip -r site.zip . -x ".git/*" ".github/*" ".idea/*"
-          if [ ! -f "site.zip" ]; then
-            echo "Zip failed!" && exit 1
-          fi
+          zip -r site.zip . -x ".git/*" ".github/*"
+          if [ ! -f "site.zip" ]; then echo "Zip failed!" && exit 1; fi
 
       # 4️⃣ Upload to Pinata
       - name: Upload to Pinata (JWT)
@@ -41,15 +39,7 @@ jobs:
           fi
           echo "cid=$CID" >> $GITHUB_OUTPUT
 
-      # 5️⃣ Show CID & gateway URLs
-      - name: Show CID and gateways
+      # 5️⃣ Show CID
+      - name: Show CID
         run: |
-          CID=${{ steps.upload.outputs.cid }}
-          echo "New IPFS CID: $CID"
-          echo "Test your site on multiple gateways:"
-          echo "dweb.link        : https://$CID.ipfs.dweb.link/"
-          echo "ipfs.io          : https://ipfs.io/ipfs/$CID/"
-          echo "Cloudflare       : https://cloudflare-ipfs.com/ipfs/$CID/"
-          echo "Infura           : https://ipfs.infura.io/ipfs/$CID/"
-          echo "Pinata Gateway   : https://gateway.pinata.cloud/ipfs/$CID/"
-          echo "Temporal Gateway : https://gateway.temporal.cloud/ipfs/$CID/"
+          echo "New IPFS CID: ${{ steps.upload.outputs.cid }}"
