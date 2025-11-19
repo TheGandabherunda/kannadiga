@@ -1,7 +1,7 @@
 name: Deploy HTML to Pinata (IPFS)
 
 on:
-  workflow_dispatch:   # Manual trigger
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -18,27 +18,39 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y jq
 
-      # 3️⃣ Upload all files in site/ folder to Pinata recursively
+      # 3️⃣ Upload site folder recursively to Pinata
       - name: Upload site folder to Pinata
         id: upload
         run: |
-          echo "Preparing file list..."
+          if [ ! -d "site" ]; then
+            echo "Error: site/ folder not found!"
+            exit 1
+          fi
+
+          # Find all files recursively
           FILES=$(find site -type f)
-          
-          # Construct curl arguments for all files
-          CURL_ARGS=""
+          if [ -z "$FILES" ]; then
+            echo "Error: No files found in site/ folder!"
+            exit 1
+          fi
+
+          echo "Files to upload:"
+          echo "$FILES"
+
+          # Construct curl command as array
+          CURL_CMD=(curl -s -X POST "https://api.pinata.cloud/pinning/pinFileToIPFS" \
+            -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}")
+
           for FILE in $FILES; do
-            CURL_ARGS="$CURL_ARGS -F file=@$FILE"
+            CURL_CMD+=(-F "file=@$FILE")
           done
-          
-          # Upload to Pinata
-          RESPONSE=$(eval curl -s -X POST "https://api.pinata.cloud/pinning/pinFileToIPFS" \
-            -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}" $CURL_ARGS)
-          
+
+          # Execute upload
+          RESPONSE=$("${CURL_CMD[@]}")
           echo "Pinata response: $RESPONSE"
 
+          # Extract CID
           CID=$(echo "$RESPONSE" | jq -r '.IpfsHash')
-
           if [ "$CID" = "null" ] || [ -z "$CID" ]; then
             echo "Failed to get CID from Pinata!" && exit 1
           fi
