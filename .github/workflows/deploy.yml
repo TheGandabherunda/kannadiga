@@ -1,9 +1,7 @@
 name: Deploy HTML to Pinata (IPFS)
 
 on:
-  push:
-    branches:
-      - master   # change if your default branch is master
+  workflow_dispatch:   # Allows manual trigger from GitHub Actions tab
 
 jobs:
   deploy:
