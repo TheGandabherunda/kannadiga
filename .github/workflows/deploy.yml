@@ -35,7 +35,7 @@ jobs:
           if [ -d "dist" ]; then zip -r site.zip dist; fi
           if [ -d "out" ]; then zip -r site.zip out; fi
 
-      - name: Upload to Pinata
+      - name: Upload to Pinata (JWT)
         id: upload
         run: |
           RESPONSE=$(curl -X POST "https://api.pinata.cloud/pinning/pinFileToIPFS" \
@@ -49,4 +49,5 @@ jobs:
           echo "cid=$CID" >> $GITHUB_OUTPUT
 
       - name: Show CID
-        run: echo "New IPFS CID: ${{ steps.upload.outputs.cid }}"
+        run: |
+          echo "New IPFS CID: ${{ steps.upload.outputs.cid }}"
