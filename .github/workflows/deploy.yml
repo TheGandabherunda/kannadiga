@@ -12,13 +12,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Install Node.js (needed for Pinata CLI)
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      # 3️⃣ Verify site folder exists
+      # 2️⃣ Verify site folder exists
       - name: Verify site folder
         run: |
           if [ ! -d "site" ]; then
@@ -28,34 +22,46 @@ jobs:
           echo "Found site folder, listing contents:"
           find site -type f
 
-      # 4️⃣ Upload folder to Pinata using CLI (preserves structure)
+      # 3️⃣ Upload folder to Pinata with proper structure
       - name: Upload to Pinata
         id: pinata_upload
         run: |
           echo "Uploading site folder to Pinata..."
           
-          # Use Pinata CLI to upload the folder
-          npx pinata upload folder site \
-            --name "site-folder" \
-            --jwt "${{ secrets.PINATA_JWT }}" \
-            --json > pinata_response.json
+          # Build curl command with all files maintaining directory structure
+          CURL_CMD="curl -X POST 'https://api.pinata.cloud/pinning/pinFileToIPFS' \
+            -H 'Authorization: Bearer ${{ secrets.PINATA_JWT }}'"
           
-          # Show response
-          cat pinata_response.json
+          # Add each file with its relative path
+          cd site
+          while IFS= read -r -d '' file; do
+            relative_path="${file#./}"
+            CURL_CMD="$CURL_CMD -F 'file=@$file;filename=$relative_path'"
+          done < <(find . -type f -print0)
+          cd ..
+          
+          # Add metadata
+          CURL_CMD="$CURL_CMD -F 'pinataMetadata={\"name\":\"site-folder\"}'"
+          CURL_CMD="$CURL_CMD -F 'pinataOptions={\"wrapWithDirectory\":true}'"
+          
+          # Execute upload
+          RESPONSE=$(eval $CURL_CMD)
+          
+          echo "Pinata response: $RESPONSE"
           
           # Extract CID
-          CID=$(cat pinata_response.json | grep -o '"IpfsHash":"[^"]*"' | sed 's/"IpfsHash":"//;s/"//')
+          CID=$(echo "$RESPONSE" | grep -o '"IpfsHash":"[^"]*"' | cut -d'"' -f4)
           
           if [ -z "$CID" ]; then
-            echo "Error: Failed to extract CID"
-            cat pinata_response.json
+            echo "Error: Failed to extract CID from response"
+            echo "Full response: $RESPONSE"
             exit 1
           fi
           
           echo "Successfully uploaded! CID: $CID"
           echo "cid=$CID" >> $GITHUB_OUTPUT
 
-      # 5️⃣ Show final CID & access URLs
+      # 4️⃣ Show final CID & access URLs
       - name: Show site URLs
         run: |
           echo "=========================================="
@@ -68,5 +74,5 @@ jobs:
           echo "🔗 https://${{ steps.pinata_upload.outputs.cid }}.ipfs.dweb.link/"
           echo "🔗 https://ipfs.io/ipfs/${{ steps.pinata_upload.outputs.cid }}"
           echo ""
-          echo "Note: Your index.html will be accessible at the root!"
+          echo "Your index.html will be at the root!"
           echo "=========================================="
