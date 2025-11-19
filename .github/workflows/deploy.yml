@@ -3,7 +3,7 @@ name: Deploy HTML to Pinata (IPFS)
 on:
   push:
     branches:
-      - main   # change if your default branch is master
+      - master   # change if your default branch is master
 
 jobs:
   deploy:
