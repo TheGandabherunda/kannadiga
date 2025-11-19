@@ -8,15 +8,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # 2️⃣ Install IPFS CLI
       - name: Install IPFS CLI
         run: |
           curl -fsSL https://dist.ipfs.io/go-ipfs/v0.22.0/go-ipfs_v0.22.0_linux-amd64.tar.gz | tar -xz
           sudo mv go-ipfs/ipfs /usr/local/bin/
 
-      - name: Upload site folder recursively
+      # 3️⃣ Initialize temporary IPFS repo
+      - name: Init IPFS repo
+        run: |
+          ipfs init
+
+      # 4️⃣ Upload site folder recursively
+      - name: Upload site folder to IPFS
         id: upload
         run: |
           if [ ! -d "site" ]; then
@@ -24,10 +32,11 @@ jobs:
             exit 1
           fi
 
-          # Recursively add the folder to IPFS and get a single CID
+          # Recursively add folder to IPFS and get single folder CID
           FOLDER_CID=$(ipfs add -r -Q site)
           echo "cid=$FOLDER_CID" >> $GITHUB_OUTPUT
 
+      # 5️⃣ Show CID
       - name: Show CID
         run: |
           echo "Your site folder CID: ${{ steps.upload.outputs.cid }}"
