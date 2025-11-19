@@ -1,4 +1,4 @@
-name: Deploy HTML to Pinata (IPFS)
+name: Deploy HTML to IPFS
 
 on:
   workflow_dispatch:
@@ -8,18 +8,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Install jq
-      - name: Install jq
+      - name: Install IPFS CLI
         run: |
-          sudo apt-get update
-          sudo apt-get install -y jq
+          curl -fsSL https://dist.ipfs.io/go-ipfs/v0.22.0/go-ipfs_v0.22.0_linux-amd64.tar.gz | tar -xz
+          sudo mv go-ipfs/ipfs /usr/local/bin/
 
-      # 3️⃣ Upload site folder recursively to Pinata
-      - name: Upload site folder to Pinata
+      - name: Upload site folder recursively
         id: upload
         run: |
           if [ ! -d "site" ]; then
@@ -27,37 +24,10 @@ jobs:
             exit 1
           fi
 
-          # Find all files recursively
-          FILES=$(find site -type f)
-          if [ -z "$FILES" ]; then
-            echo "Error: No files found in site/ folder!"
-            exit 1
-          fi
+          # Recursively add the folder to IPFS and get a single CID
+          FOLDER_CID=$(ipfs add -r -Q site)
+          echo "cid=$FOLDER_CID" >> $GITHUB_OUTPUT
 
-          echo "Files to upload:"
-          echo "$FILES"
-
-          # Construct curl command as array
-          CURL_CMD=(curl -s -X POST "https://api.pinata.cloud/pinning/pinFileToIPFS" \
-            -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}")
-
-          for FILE in $FILES; do
-            CURL_CMD+=(-F "file=@$FILE")
-          done
-
-          # Execute upload
-          RESPONSE=$("${CURL_CMD[@]}")
-          echo "Pinata response: $RESPONSE"
-
-          # Extract CID
-          CID=$(echo "$RESPONSE" | jq -r '.IpfsHash')
-          if [ "$CID" = "null" ] || [ -z "$CID" ]; then
-            echo "Failed to get CID from Pinata!" && exit 1
-          fi
-
-          echo "cid=$CID" >> $GITHUB_OUTPUT
-
-      # 4️⃣ Show CID
       - name: Show CID
         run: |
-          echo "New IPFS CID: ${{ steps.upload.outputs.cid }}"
+          echo "Your site folder CID: ${{ steps.upload.outputs.cid }}"
