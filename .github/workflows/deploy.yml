@@ -18,9 +18,9 @@ jobs:
         with:
           node-version: '18'
 
-      # 3️⃣ Install Pinata SDK
-      - name: Install Pinata SDK
-        run: npm install @pinata/sdk
+      # 3️⃣ Install dependencies
+      - name: Install dependencies
+        run: npm install form-data recursive-fs
 
       # 4️⃣ Create and run upload script
       - name: Upload to Pinata
@@ -29,34 +29,102 @@ jobs:
           PINATA_JWT: ${{ secrets.PINATA_JWT }}
         run: |
           cat << 'SCRIPT_EOF' > upload.js
-          const pinataSDK = require('@pinata/sdk');
           const fs = require('fs');
+          const path = require('path');
+          const FormData = require('form-data');
+          const https = require('https');
+          const recursiveFs = require('recursive-fs');
+
+          async function uploadDirectory(sourcePath, jwt) {
+            return new Promise((resolve, reject) => {
+              recursiveFs.readdirr(sourcePath, (err, dirs, files) => {
+                if (err) {
+                  reject(err);
+                  return;
+                }
+
+                const form = new FormData();
+
+                // Add each file with its relative path
+                files.forEach(file => {
+                  const relativePath = path.relative(sourcePath, file);
+                  form.append('file', fs.createReadStream(file), {
+                    filepath: relativePath
+                  });
+                  console.log(`Adding: ${relativePath}`);
+                });
+
+                // Add metadata
+                const metadata = JSON.stringify({
+                  name: 'site-folder'
+                });
+                form.append('pinataMetadata', metadata);
+
+                const options = JSON.stringify({
+                  wrapWithDirectory: true
+                });
+                form.append('pinataOptions', options);
+
+                // Make the request
+                const requestOptions = {
+                  method: 'POST',
+                  hostname: 'api.pinata.cloud',
+                  path: '/pinning/pinFileToIPFS',
+                  headers: {
+                    'Authorization': `Bearer ${jwt}`,
+                    ...form.getHeaders()
+                  }
+                };
+
+                const req = https.request(requestOptions, (res) => {
+                  let data = '';
+
+                  res.on('data', (chunk) => {
+                    data += chunk;
+                  });
+
+                  res.on('end', () => {
+                    if (res.statusCode === 200) {
+                      try {
+                        const result = JSON.parse(data);
+                        resolve(result);
+                      } catch (e) {
+                        reject(new Error(`Failed to parse response: ${data}`));
+                      }
+                    } else {
+                      reject(new Error(`Upload failed: ${res.statusCode} - ${data}`));
+                    }
+                  });
+                });
+
+                req.on('error', (error) => {
+                  reject(error);
+                });
+
+                form.pipe(req);
+              });
+            });
+          }
 
           async function main() {
+            const jwt = process.env.PINATA_JWT;
+            if (!jwt) {
+              console.error('PINATA_JWT not found');
+              process.exit(1);
+            }
+
             try {
-              // Initialize Pinata with JWT
-              const pinata = new pinataSDK({ pinataJWTKey: process.env.PINATA_JWT });
+              console.log('Uploading site folder to Pinata...');
+              const result = await uploadDirectory('./site', jwt);
           
-              console.log("Uploading site folder to Pinata...");
-          
-              // Upload the folder
-              const result = await pinata.pinFromFS('./site', {
-                pinataMetadata: {
-                  name: 'site'
-                },
-                pinataOptions: {
-                  wrapWithDirectory: true
-                }
-              });
-          
-              console.log("Upload successful!");
-              console.log("CID:", result.IpfsHash);
+              console.log('Upload successful!');
+              console.log('CID:', result.IpfsHash);
           
               // Write to GitHub output
               fs.appendFileSync(process.env.GITHUB_OUTPUT, `cid=${result.IpfsHash}\n`);
           
             } catch (error) {
-              console.error("Upload failed:", error.message);
+              console.error('Upload failed:', error.message);
               process.exit(1);
             }
           }
@@ -75,9 +143,9 @@ jobs:
           echo "CID: ${{ steps.pinata_upload.outputs.cid }}"
           echo ""
           echo "Access your site at:"
-          echo "🔗 https://gateway.pinata.cloud/ipfs/${{ steps.pinata_upload.outputs.cid }}/site/"
-          echo "🔗 https://${{ steps.pinata_upload.outputs.cid }}.ipfs.dweb.link/site/"
-          echo "🔗 https://ipfs.io/ipfs/${{ steps.pinata_upload.outputs.cid }}/site/"
+          echo "🔗 https://gateway.pinata.cloud/ipfs/${{ steps.pinata_upload.outputs.cid }}"
+          echo "🔗 https://${{ steps.pinata_upload.outputs.cid }}.ipfs.dweb.link/"
+          echo "🔗 https://ipfs.io/ipfs/${{ steps.pinata_upload.outputs.cid }}"
           echo ""
-          echo "Your index.html is at: .../site/index.html"
+          echo "Your index.html will be at the root!"
           echo "=========================================="
