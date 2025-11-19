@@ -12,7 +12,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Verify site folder exists
+      # 2️⃣ Setup Python
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      # 3️⃣ Install requests library
+      - name: Install dependencies
+        run: pip install requests
+
+      # 4️⃣ Verify site folder exists
       - name: Verify site folder
         run: |
           if [ ! -d "site" ]; then
@@ -22,46 +32,82 @@ jobs:
           echo "Found site folder, listing contents:"
           find site -type f
 
-      # 3️⃣ Upload folder to Pinata with proper structure
+      # 5️⃣ Upload folder to Pinata
       - name: Upload to Pinata
         id: pinata_upload
         run: |
-          echo "Uploading site folder to Pinata..."
-          
-          # Build curl command with all files maintaining directory structure
-          CURL_CMD="curl -X POST 'https://api.pinata.cloud/pinning/pinFileToIPFS' \
-            -H 'Authorization: Bearer ${{ secrets.PINATA_JWT }}'"
-          
-          # Add each file with its relative path
-          cd site
-          while IFS= read -r -d '' file; do
-            relative_path="${file#./}"
-            CURL_CMD="$CURL_CMD -F 'file=@$file;filename=$relative_path'"
-          done < <(find . -type f -print0)
-          cd ..
-          
-          # Add metadata
-          CURL_CMD="$CURL_CMD -F 'pinataMetadata={\"name\":\"site-folder\"}'"
-          CURL_CMD="$CURL_CMD -F 'pinataOptions={\"wrapWithDirectory\":true}'"
-          
-          # Execute upload
-          RESPONSE=$(eval $CURL_CMD)
-          
-          echo "Pinata response: $RESPONSE"
-          
-          # Extract CID
-          CID=$(echo "$RESPONSE" | grep -o '"IpfsHash":"[^"]*"' | cut -d'"' -f4)
-          
-          if [ -z "$CID" ]; then
-            echo "Error: Failed to extract CID from response"
-            echo "Full response: $RESPONSE"
-            exit 1
-          fi
-          
-          echo "Successfully uploaded! CID: $CID"
-          echo "cid=$CID" >> $GITHUB_OUTPUT
+          cat << 'EOF' > upload_to_pinata.py
+          import os
+          import sys
+          import requests
+          from pathlib import Path
 
-      # 4️⃣ Show final CID & access URLs
+          def upload_folder_to_pinata(folder_path, jwt_token):
+              url = "https://api.pinata.cloud/pinning/pinFileToIPFS"
+              headers = {
+                  "Authorization": f"Bearer {jwt_token}"
+              }
+          
+              files = []
+              folder = Path(folder_path)
+          
+              # Collect all files with their relative paths
+              for file_path in folder.rglob('*'):
+                  if file_path.is_file():
+                      relative_path = file_path.relative_to(folder)
+                      files.append(
+                          ('file', (str(relative_path), open(file_path, 'rb')))
+                      )
+          
+              # Add metadata
+              data = {
+                  'pinataMetadata': '{"name":"site-folder"}',
+                  'pinataOptions': '{"wrapWithDirectory":true}'
+              }
+          
+              print(f"Uploading {len(files)} files to Pinata...")
+          
+              try:
+                  response = requests.post(url, headers=headers, files=files, data=data)
+                  response.raise_for_status()
+          
+                  result = response.json()
+                  cid = result.get('IpfsHash')
+          
+                  if cid:
+                      print(f"Success! CID: {cid}")
+                      # Write to GitHub output
+                      with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                          f.write(f"cid={cid}\n")
+                      return cid
+                  else:
+                      print(f"Error: No CID in response: {result}")
+                      sys.exit(1)
+          
+              except requests.exceptions.RequestException as e:
+                  print(f"Error uploading to Pinata: {e}")
+                  if hasattr(e, 'response') and e.response is not None:
+                      print(f"Response: {e.response.text}")
+                  sys.exit(1)
+              finally:
+                  # Close all file handles
+                  for _, (_, file_obj) in files:
+                      file_obj.close()
+
+          if __name__ == "__main__":
+              jwt = os.environ.get('PINATA_JWT')
+              if not jwt:
+                  print("Error: PINATA_JWT not found in environment")
+                  sys.exit(1)
+          
+              upload_folder_to_pinata('site', jwt)
+          EOF
+
+          python upload_to_pinata.py
+        env:
+          PINATA_JWT: ${{ secrets.PINATA_JWT }}
+
+      # 6️⃣ Show final CID & access URLs
       - name: Show site URLs
         run: |
           echo "=========================================="
@@ -74,5 +120,5 @@ jobs:
           echo "🔗 https://${{ steps.pinata_upload.outputs.cid }}.ipfs.dweb.link/"
           echo "🔗 https://ipfs.io/ipfs/${{ steps.pinata_upload.outputs.cid }}"
           echo ""
-          echo "Your index.html will be at the root!"
+          echo "Your index.html will be accessible at the root!"
           echo "=========================================="
