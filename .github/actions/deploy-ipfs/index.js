@@ -1,115 +1,60 @@
-import * as core from "@actions/core";
-import * as fs from "fs";
-import * as path from "path";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
-import FormData from "form-data";
-import axios from "axios";
+const { PinataSDK } = require("pinata");
+const fs = require("fs");
+const path = require("path");
+const mime = require("mime-types");
+const { Blob } = require("buffer");
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Initialize SDK with JWT from environment variables
+const pinata = new PinataSDK({
+  pinataJwt: process.env.PINATA_JWT,
+  pinataGateway: "example-gateway.mypinata.cloud", // Optional: Placeholder or your actual gateway
+});
 
-async function uploadDirectoryToPinata() {
+// Path to the src directory relative to this script
+const srcPath = path.join(__dirname, "../../../src");
+
+async function getFiles(dir) {
+  const files = [];
+  const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      // Recursively get files from subdirectories
+      files.push(...await getFiles(fullPath));
+    } else {
+      const buffer = await fs.promises.readFile(fullPath);
+      // Create a relative path (e.g., "assets/logo.svg") to preserve structure
+      const relativePath = path.relative(srcPath, fullPath);
+      const type = mime.lookup(entry.name) || "application/octet-stream";
+
+      // Create a File object compatible with the SDK
+      const file = new File([buffer], relativePath, { type: type });
+      files.push(file);
+    }
+  }
+  return files;
+}
+
+async function upload() {
   try {
-    // Get inputs from workflow
-    const pinataJwt = core.getInput("pinata_jwt");
-    const sourceDir = core.getInput("source_dir");
+    console.log("Reading files from src...");
+    const files = await getFiles(srcPath);
 
-    if (!pinataJwt) {
-      throw new Error("PINATA_JWT is required");
+    if (files.length === 0) {
+      throw new Error("No files found in src directory!");
     }
 
-    console.log(`📁 Preparing to upload directory: ${sourceDir}`);
+    console.log(`Uploading ${files.length} files to Pinata...`);
+    const upload = await pinata.upload.public.fileArray(files);
 
-    // Get the base folder name
-    const baseFolderName = path.basename(sourceDir);
-    console.log(`📦 Base folder name: ${baseFolderName}`);
-
-    // Create FormData
-    const formData = new FormData();
-
-    // Add all the files with their relative paths
-    function addFilesToFormData(dir, baseDir = dir) {
-      const items = fs.readdirSync(dir, { withFileTypes: true });
-
-      for (const item of items) {
-        const fullPath = path.join(dir, item.name);
-
-        if (item.isDirectory()) {
-          addFilesToFormData(fullPath, baseDir);
-        } else {
-          // Get relative path WITHOUT prepending the base folder name
-          const relativePath = path.relative(baseDir, fullPath);
-          console.log(`   - ${relativePath}`);
-          const fileStream = fs.createReadStream(fullPath);
-
-          // Append with the relative path to preserve directory structure
-          formData.append('file', fileStream, {
-            filepath: relativePath
-          });
-        }
-      }
-    }
-
-    addFilesToFormData(sourceDir);
-
-    // Add metadata
-    formData.append('pinataMetadata', JSON.stringify({
-      name: baseFolderName
-    }));
-
-    console.log("🚀 Uploading to Pinata using axios...");
-
-    const response = await axios.post(
-      'https://api.pinata.cloud/pinning/pinFileToIPFS',
-      formData,
-      {
-        maxBodyLength: Infinity,
-        headers: {
-          'Authorization': `Bearer ${pinataJwt}`,
-          ...formData.getHeaders()
-        }
-      }
-    );
-
-    const upload = response.data;
-
-    console.log("✅ Upload successful!");
-    console.log(`📌 CID: ${upload.IpfsHash}`);
-    console.log(`🔗 IPFS Gateway: https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}`);
-    console.log(`📄 Your site: https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}/index.html`);
-
-    // Set outputs
-    core.setOutput("cid", upload.IpfsHash);
-    core.setOutput("ipfs_url", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}`);
-    core.setOutput("site_url", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}/index.html`);
-    core.setOutput("pin_size", upload.PinSize);
-    core.setOutput("timestamp", upload.Timestamp);
-
-    // Create a summary
-    await core.summary
-      .addHeading("🎉 Deployment Successful")
-      .addTable([
-        [{ data: "Property", header: true }, { data: "Value", header: true }],
-        ["CID", upload.IpfsHash],
-        ["IPFS URL", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}`],
-        ["Site URL", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}/index.html`],
-        ["Pin Size", `${upload.PinSize} bytes`],
-        ["Timestamp", upload.Timestamp],
-      ])
-      .addLink("🌐 View Your Site", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}/index.html`)
-      .write();
-
+    console.log("Upload Complete!");
+    console.log("CID:", upload.cid);
+    console.log("Name:", upload.name);
   } catch (error) {
-    console.error("❌ Deployment failed:", error);
-    if (error.response) {
-      console.error("Response status:", error.response.status);
-      console.error("Response data:", JSON.stringify(error.response.data, null, 2));
-    }
-    console.error("Error details:", error.stack);
-    core.setFailed(error.message);
+    console.error("Upload failed:", error);
+    process.exit(1);
   }
 }
 
-// Run the upload
-uploadDirectoryToPinata();
+upload();
