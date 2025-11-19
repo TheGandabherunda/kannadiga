@@ -2,6 +2,11 @@ import { PinataSDK } from "pinata";
 import * as core from "@actions/core";
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 async function uploadDirectoryToPinata() {
   try {
@@ -22,13 +27,13 @@ async function uploadDirectoryToPinata() {
 
     // Read all files from the source directory recursively
     const files = [];
-    
+
     function readDirRecursive(dir, baseDir = dir) {
       const items = fs.readdirSync(dir, { withFileTypes: true });
-      
+
       for (const item of items) {
         const fullPath = path.join(dir, item.name);
-        
+
         if (item.isDirectory()) {
           readDirRecursive(fullPath, baseDir);
         } else {
@@ -43,34 +48,63 @@ async function uploadDirectoryToPinata() {
     }
 
     readDirRecursive(sourceDir);
-    
-    console.log(`📦 Found ${files.length} files to upload`);
 
-    // Upload the directory to Pinata
+    console.log(`📦 Found ${files.length} files to upload`);
+    files.forEach(file => console.log(`   - ${file.name}`));
+
+    // Upload the files array to Pinata using the correct method
     console.log("🚀 Uploading to Pinata...");
-    const upload = await pinata.upload.fileArray(files, {
-      groupId: undefined, // You can set a group ID if needed
+
+    // Use the base upload method with file array
+    const formData = new FormData();
+
+    files.forEach((file) => {
+      formData.append('file', file, file.name);
     });
 
+    formData.append('pinataMetadata', JSON.stringify({
+      name: 'kannadiga-site'
+    }));
+
+    formData.append('pinataOptions', JSON.stringify({
+      wrapWithDirectory: true
+    }));
+
+    const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${pinataJwt}`
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Upload failed: ${response.status} - ${errorText}`);
+    }
+
+    const upload = await response.json();
+
     console.log("✅ Upload successful!");
-    console.log(`📌 CID: ${upload.cid}`);
-    console.log(`🔗 IPFS URL: https://gateway.pinata.cloud/ipfs/${upload.cid}`);
-    console.log(`📊 Upload ID: ${upload.id}`);
+    console.log(`📌 CID: ${upload.IpfsHash}`);
+    console.log(`🔗 IPFS URL: https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}`);
 
     // Set outputs for use in other workflow steps
-    core.setOutput("cid", upload.cid);
-    core.setOutput("ipfs_url", `https://gateway.pinata.cloud/ipfs/${upload.cid}`);
-    core.setOutput("upload_id", upload.id);
+    core.setOutput("cid", upload.IpfsHash);
+    core.setOutput("ipfs_url", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}`);
+    core.setOutput("pin_size", upload.PinSize);
+    core.setOutput("timestamp", upload.Timestamp);
 
     // Create a summary
     await core.summary
       .addHeading("🎉 Deployment Successful")
       .addTable([
         [{ data: "Property", header: true }, { data: "Value", header: true }],
-        ["CID", upload.cid],
-        ["IPFS URL", `https://gateway.pinata.cloud/ipfs/${upload.cid}`],
-        ["Upload ID", upload.id],
+        ["CID", upload.IpfsHash],
+        ["IPFS URL", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}`],
+        ["Pin Size", upload.PinSize.toString()],
         ["Files Uploaded", files.length.toString()],
+        ["Timestamp", upload.Timestamp],
       ])
       .write();
 
