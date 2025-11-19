@@ -3,70 +3,232 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive 3D Gold Texture Logo</title>
+    <title>ಕನ್ನಡಿಗ • KANNADIGA</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@600&family=Noto+Serif+Kannada:wght@600&display=swap" rel="stylesheet">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- GSAP Animation Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
     <!-- External CSS -->
     <link rel="stylesheet" href="styles.css">
+
+    <!-- Prevent FOUC (Flash of Unstyled Content) by hiding elements initially -->
+    <style>
+        .loading-text-left,
+        .container,
+        .kannada-text,
+        .loading-text-right {
+            visibility: hidden; /* GSAP will handle making them visible */
+        }
+    </style>
 </head>
 <body>
 
+<!-- LEFT TEXT: Kannada Identity -->
+<div class="loading-text-left">ಸಿರಿಗನ್ನಡಂ ಗೆಲ್ಗೆ . ಸಿರಿಗನ್ನಡಂ ಬಾಳ್ಗೆ</div>
+
+<!-- CENTER: Logo Container -->
 <div class="container" id="interaction-container">
-    <!-- Container wrapping the SVG -->
     <div class="logo-wrapper" id="logoWrapper">
-        <!-- SVG will be injected here by the script -->
+        <!-- SVG will be injected here -->
     </div>
 </div>
 
+<!-- BOTTOM TEXT: kannada -->
+<div class="kannada-text">ಕನ್ನಡಿಗ</div>
+
+<!-- RIGHT TEXT: Loading Counter -->
+<div class="loading-text-right" id="loadingCounter">೦೦</div>
+
 <script>
-    // --- PRELOADER LOGIC START ---
-    // The specific colors you requested
+    // --- CONFIGURATION ---
     const preloadColors = ['#FF0000', '#FFCF03', '#00C907', '#9A00EB', '#F2059F'];
-    let colorIndex = 0;
-    let preloadInterval;
+    const loadingDuration = 3000; // 3 seconds (used for duration calculation)
+
+    // Elements
     const logoWrapperEl = document.getElementById('logoWrapper');
+    const counterEl = document.getElementById('loadingCounter');
 
-    function startPreloader() {
-        // Change color every 500ms (adjust speed here if needed)
-        preloadInterval = setInterval(() => {
-            // Set current color
-            logoWrapperEl.style.backgroundColor = preloadColors[colorIndex];
+    // Kannada Digits Map
+    const kannadaDigits = ['೦','೧','೨','೩','೪','೫','೬','೭','೮','೯'];
 
-            // Move to next color, loop back to start if at end
-            colorIndex = (colorIndex + 1) % preloadColors.length;
-        }, 500);
+    // Helper: Convert number to Kannada string
+    function toKannadaNum(num) {
+        const numStr = num.toString().padStart(2, '0');
+        return numStr.split('').map(digit => kannadaDigits[parseInt(digit)]).join('');
     }
 
-    function stopPreloader() {
-        clearInterval(preloadInterval);
+    // --- GSAP ENTRANCE ANIMATION ---
+    function runIntroAnimation() {
+        const tl = gsap.timeline({
+            onComplete: startAppLogic // Run counter/colors AFTER animation
+        });
+
+        // Group 1: Top Row Elements
+        const topRowElements = [
+            '.loading-text-left',
+            '.container',
+            '.loading-text-right'
+        ];
+
+        // Group 2: kannada
+        const kannadaElement = '.kannada-text';
+
+        // 1. Set Initial State (Blurry, slightly down, transparent)
+        gsap.set([...topRowElements, kannadaElement], {
+            autoAlpha: 0,      // Opacity + Visibility
+            y: 50,             // Start 50px down
+            filter: "blur(10px)" // Smooth blur effect
+        });
+
+        // 2. Animate Top Row First (Simultaneous)
+        tl.to(topRowElements, {
+            duration: 2.0,     // UPDATED: Slower appearing (was 1.5)
+            autoAlpha: 1,
+            y: 0,
+            filter: "blur(0px)",
+            stagger: 0,        // No stagger, all appear at same time
+            ease: "expo.inOut" // CURVE: Expo InOut
+        })
+        // 3. Animate kannada Second (With Adjusted Delay)
+        .to(kannadaElement, {
+            duration: 2.0,     // UPDATED: Slower appearing (was 1.5)
+            autoAlpha: 1,
+            y: 0,
+            filter: "blur(0px)",
+            ease: "expo.inOut" // CURVE: Expo InOut
+        }, "-=1.9"); // UPDATED: Starts 0.1s after top row (2.0 - 1.9 = 0.1s delay)
     }
 
-    // Start the color cycling immediately
-    startPreloader();
-    // --- PRELOADER LOGIC END ---
+    // --- GSAP EXIT ANIMATION (ONBOARDING TRANSITION) ---
+    function runExitAnimation() {
+        const tl = gsap.timeline();
 
+        const container = document.querySelector('.container');
+        const kannadaText = document.querySelector('.kannada-text');
+        const leftText = document.querySelector('.loading-text-left');
+        const rightText = document.querySelector('.loading-text-right');
 
-    // Standard Fetch and Inject SVG
+        // --- DYNAMIC CALCULATIONS ---
+        // We calculate exact pixels to ensure perfect 140px spacing regardless of screen size
+
+        // 1. Get Geometry
+        const containerRect = container.getBoundingClientRect();
+        const textRect = kannadaText.getBoundingClientRect();
+
+        // 2. Calculate Logo Move
+        // Target: Top of logo should be 140px from viewport top
+        // Current: containerRect.top
+        const targetLogoTop = 140;
+        const logoMoveY = targetLogoTop - containerRect.top;
+
+        // 3. Calculate Text Move
+        // Target: Text should be below logo (140 + height) + 16px spacing
+        const targetTextTop = targetLogoTop + containerRect.height + 16;
+        const textMoveY = targetTextTop - textRect.top;
+
+        // --- ANIMATION SEQUENCE ---
+        tl
+        // 1. Fade OUT Side Texts (Move UP, Blur, Fade) - Reverse of Entry
+        .to([leftText, rightText], {
+            duration: 1.5,       // Sync duration
+            y: -50,              // Move Up
+            autoAlpha: 0,        // Fade out
+            filter: "blur(10px)", // Blur out
+            ease: "expo.inOut"   // CURVE: Expo InOut
+        })
+        // 2. Move Logo and Bottom Text to new positions
+        .to(container, {
+            duration: 1.5,
+            y: "+=" + logoMoveY, // Move relative to current position
+            ease: "expo.inOut"   // CURVE: Expo InOut
+        }, "<") // "<" starts this tween exactly when previous starts (SAME TIME)
+        .to(kannadaText, {
+            duration: 1.5,
+            y: "+=" + textMoveY, // Move relative to current position
+            ease: "expo.inOut"   // CURVE: Expo InOut
+        }, "<"); // Sync exactly with logo move
+    }
+
+    // --- APP LOGIC (Colors & Counter) ---
+    let colorInterval;
+    let lastColorIndex = -1;
+
+    function startAppLogic() {
+        startColorCycle();
+        startCounter();
+    }
+
+    function startColorCycle() {
+        const setRandomColor = () => {
+            let newIndex;
+            do {
+                newIndex = Math.floor(Math.random() * preloadColors.length);
+            } while (newIndex === lastColorIndex);
+
+            lastColorIndex = newIndex;
+            logoWrapperEl.style.backgroundColor = preloadColors[newIndex];
+        };
+
+        setRandomColor();
+        colorInterval = setInterval(setRandomColor, 300);
+    }
+
+    function stopColorCycle() {
+        clearInterval(colorInterval);
+    }
+
+    function startCounter() {
+        // REPLACED setInterval WITH GSAP TWEEN
+        // This ensures the counting numbers also follow the Expo InOut curve
+        const progress = { val: 0 };
+
+        gsap.to(progress, {
+            val: 100,
+            duration: 3,        // 3 seconds
+            ease: "expo.inOut", // CURVE: Expo InOut (Applied to the counting itself)
+            onUpdate: function() {
+                // Update text with current integer value
+                counterEl.textContent = toKannadaNum(Math.floor(progress.val));
+            },
+            onComplete: function() {
+                stopColorCycle();
+                runExitAnimation();
+            }
+        });
+    }
+
+    // --- INITIALIZATION & FETCHING ---
+
+    // Fetch SVG -> Inject -> Run Animation
     fetch('assets/metal.svg')
         .then(response => response.text())
         .then(svgContent => {
-
             // 1. Inject content
             document.getElementById('logoWrapper').innerHTML = svgContent;
 
-            // 2. Stop the preloader color changing (content is now loaded)
-            stopPreloader();
-
-            // 3. Once SVG is in the DOM, load the main interaction script
+            // 2. Load the interaction script (for mouse effects)
             const script = document.createElement('script');
             script.src = 'script.js';
             document.body.appendChild(script);
+
+            // 3. Start the Entrance Animation
+            // We wait for SVG to be in DOM so it animates with the container
+            runIntroAnimation();
         })
         .catch(err => {
             console.error('Error loading SVG:', err);
-            // Safety: Stop preloader if error occurs
-            stopPreloader();
+            // Fallback: run logic anyway if SVG fails
+            startAppLogic();
         });
+
 </script>
 
 </body>

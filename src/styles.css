@@ -9,7 +9,7 @@ body {
     background-color: #F2EFE5;
     font-family: sans-serif;
     overflow: hidden;
-    /*background: radial-gradient(circle, #F2EFE5 0%, #F2EFE5 100%); */
+    position: relative;
 }
 
 .container {
@@ -17,66 +17,110 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    pointer-events: none; /* Let clicks pass through to body if needed */
+    pointer-events: none;
 }
-
 
 .logo-wrapper {
     position: relative;
-    background-color: #FF0000;
+    background-color: #FF0000; /* Initial Color */
     padding: 4px;
     display: inline-block;
     line-height: 0;
     box-shadow: none;
 
-    /* CSS Variables for the light position, updated by JS */
+    /* CSS Variables */
     --light-x: 50%;
     --light-y: 50%;
-    --glow-opacity: 0; /* Default to 0 (no glow) */
+    --glow-opacity: 0;
 
-    pointer-events: auto; /* Re-enable pointer events for the logo itself */
+    pointer-events: auto;
+
+    /* Abrupt background color changes */
+    transition: opacity 0.1s linear;
 }
 
-/* 1. Leather Texture Layer */
+/* --- TEXT ELEMENTS STYLING --- */
+
+/* 1. Extreme Left Text (Kannada Identity) */
+.loading-text-left {
+    position: absolute;
+    left: 32px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+
+    /* Typography Settings */
+    font-family: 'Noto Sans Kannada', sans-serif;
+    font-size: 20px;
+    font-weight: 600; /* Semibold */
+    color: rgba(0, 0, 0, 0.2); /* Black with 20% opacity */
+}
+
+/* 2. Extreme Right Text (Counter) */
+.loading-text-right {
+    position: absolute;
+    right: 32px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+
+    /* Typography Settings */
+    font-family: 'Noto Sans Kannada', sans-serif;
+    font-size: 20px;
+    font-weight: 600; /* Semibold */
+    color: #000000;
+
+    font-variant-numeric: tabular-nums;
+}
+
+/* 3. Bottom Text (kannada) */
+.kannada-text {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    white-space: nowrap;
+
+    /* Typography Settings */
+    font-family: 'Noto Serif Kannada', serif;
+    font-size: 20px;
+    font-weight: 600; /* Semibold */
+    color: #000000;
+}
+
+/* --- EXISTING LOGO STYLES --- */
+
+/* Leather Texture Layer */
 .logo-wrapper::before {
     content: "";
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    /* Use the uploaded leather image */
     background-image: url('assets/leather-macro-shot.jpg');
-    /* Scale it down slightly so the grain is visible on a small icon */
     background-size: 150px auto;
-
-    /* The requested blend settings */
     opacity: 0.4;
     mix-blend-mode: luminosity;
-
     pointer-events: none;
     z-index: 0;
 }
 
-/* 2. Subtle Light Reflection Layer (Leather Sheen) */
+/* Light Reflection Layer */
 .logo-wrapper::after {
     content: "";
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    /* A soft white radial gradient that moves with the cursor variables */
     background: radial-gradient(
         circle 80px at var(--light-x) var(--light-y),
         rgba(255, 255, 255, 0.4) 0%,
         rgba(255, 255, 255, 0) 100%
     );
-    mix-blend-mode: screen; /* Softens the highlight */
-
-    /* Controlled by JS proximity now, not hover */
+    mix-blend-mode: screen;
     opacity: var(--glow-opacity);
-    transition: opacity 0.1s linear; /* Fast transition for responsiveness */
-
+    transition: opacity 0.1s linear;
     pointer-events: none;
     z-index: 1;
 }
 
-/* Ensure SVG sits on top of the texture */
 svg {
     position: relative;
     z-index: 2;

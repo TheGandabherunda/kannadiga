@@ -16,6 +16,7 @@ window.addEventListener('mousemove', (e) => {
     // Guard clause in case SVG hasn't fully parsed yet
     if (!lightSource || !diffuseSource) return;
 
+    // Get updated rect (crucial because logo moves during onboarding)
     const logoRect = logoWrapper.getBoundingClientRect();
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
@@ -30,7 +31,6 @@ window.addEventListener('mousemove', (e) => {
     const distance = Math.sqrt(distX * distX + distY * distY);
 
     // Dynamic maxDistance based on viewport size to ensure corners work
-    // using the diagonal of the screen divided by 1.5 ensures it covers corners comfortably
     const maxDistance = Math.sqrt(windowWidth * windowWidth + windowHeight * windowHeight) / 1.5;
 
     // Calculate intensity (0 to 1) based on distance
@@ -40,7 +40,6 @@ window.addEventListener('mousemove', (e) => {
     logoWrapper.style.setProperty('--glow-opacity', intensity.toFixed(2));
 
     // Update Specular Light Intensity
-    // MODIFIED: Set minSpecular to 0.75 for a very subtle shade darker when away (was 0.9)
     const baseSpecular = 0.9;
     const minSpecular = 0.75;
 
@@ -53,8 +52,6 @@ window.addEventListener('mousemove', (e) => {
     const yPercent = e.clientY / windowHeight;
 
     // Map window percentage to SVG coordinates
-    // We multiply by larger numbers to allow the light to move "outside" the SVG bounds
-    // giving a more dramatic directional effect
     const svgX = xPercent * vbWidth * 3 - (vbWidth);
     const svgY = yPercent * vbHeight * 3 - (vbHeight);
 
@@ -67,7 +64,7 @@ window.addEventListener('mousemove', (e) => {
     // Update SVG Drop Shadow
     const centerX = 0.5;
     const centerY = 0.5;
-    const shadowX = (centerX - xPercent) * 8; // Increased multiplier for more dramatic shadow
+    const shadowX = (centerX - xPercent) * 8;
     const shadowY = (centerY - yPercent) * 8;
     shadowFilter.setAttribute('dx', shadowX);
     shadowFilter.setAttribute('dy', shadowY);
@@ -92,7 +89,6 @@ document.addEventListener('mouseleave', () => {
     diffuseSource.setAttribute('y', 48);
 
     // Reset intensity
-    // MODIFIED: Reset to 0.75 (matching minSpecular) for slight darkness
     specularElement.setAttribute('specularConstant', '0.75');
 
     // 2. Reset Drop Shadow to 0
