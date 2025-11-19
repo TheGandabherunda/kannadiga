@@ -1,7 +1,10 @@
-name: Deploy Kannadiga Site to IPFS
+name: Deploy to Pinata IPFS
 
 on:
-  workflow_dispatch:   # Manual trigger
+  push:
+    branches:
+      - main  # or master, depending on your default branch
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
 
 jobs:
   deploy:
@@ -14,23 +17,15 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
-      - name: Install root dependencies
-        run: npm install
-
-      - name: Install action dependencies
+      - name: Install dependencies for deploy action
         run: |
           cd .github/actions/deploy-ipfs
           npm install
 
-      - name: Deploy src/ folder to Pinata
+      - name: Deploy to Pinata
         uses: ./.github/actions/deploy-ipfs
         with:
-          pinata-jwt: ${{ secrets.PINATA_JWT }}
-          source-dir: './src'
-          pin-name: 'Kannadiga Site - ${{ github.sha }}'
-
-      - name: Show IPFS URL
-        run: |
-          echo "Visit your content at: https://gateway.pinata.cloud/ipfs/${{ steps.deploy.outputs['ipfs-hash'] }}"
+          pinata_jwt: ${{ secrets.PINATA_JWT }}
+          source_dir: './src'

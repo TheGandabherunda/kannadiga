@@ -1,8 +1,0 @@
-{
-  "name": "kannadiga-deploy",
-  "version": "1.0.0",
-  "description": "Deploy static site to IPFS via GitHub Actions",
-  "main": "index.js",
-  "scripts": {},
-  "dependencies": {}
-}

@@ -1,22 +1,24 @@
-name: 'Deploy to IPFS via Pinata'
-description: 'Upload directory contents to IPFS using Pinata'
+name: 'Deploy to Pinata IPFS'
+description: 'Upload a directory to Pinata IPFS'
+author: 'Your Name'
+
 inputs:
-  pinata-jwt:
+  pinata_jwt:
     description: 'Pinata JWT token'
     required: true
-  source-dir:
+  source_dir:
     description: 'Directory to upload to IPFS'
     required: true
     default: './src'
-  pin-name:
-    description: 'Name for the pinned content'
-    required: false
-    default: 'GitHub Actions Deploy'
+
 outputs:
-  ipfs-hash:
-    description: 'The IPFS hash of the uploaded content'
-  gateway-url:
-    description: 'The gateway URL to access the content'
+  cid:
+    description: 'The CID of the uploaded content'
+  ipfs_url:
+    description: 'The full IPFS gateway URL'
+  upload_id:
+    description: 'The Pinata upload ID'
+
 runs:
   using: 'node20'
   main: 'index.js'
