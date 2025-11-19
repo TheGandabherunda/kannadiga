@@ -1,14 +1,14 @@
 name: Deploy HTML Site to Pinata (IPFS)
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Manual trigger
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repo
+      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -18,28 +18,22 @@ jobs:
           curl -fsSL https://dist.ipfs.io/go-ipfs/v0.22.0/go-ipfs_v0.22.0_linux-amd64.tar.gz | tar -xz
           sudo mv go-ipfs/ipfs /usr/local/bin/
 
-      # 3️⃣ Init temporary IPFS repo
+      # 3️⃣ Initialize temporary IPFS repo
       - name: Init IPFS repo
         run: ipfs init
 
-      # 4️⃣ Prepare folder to upload
-      - name: Prepare deploy folder
-        run: |
-          rm -rf deploy_folder
-          mkdir deploy_folder
-          cp index.html deploy_folder/
-          cp -r assets deploy_folder/
-
-      # 5️⃣ Add folder to IPFS recursively
-      - name: Add folder to IPFS
+      # 4️⃣ Add site files to IPFS directly at root
+      - name: Add files to IPFS
         id: ipfs_add
         run: |
-          FOLDER_CID=$(ipfs add -r -Q deploy_folder)
+          # Add only index.html and assets folder at the root of the CID
+          FOLDER_CID=$(ipfs add -r -Q index.html assets)
           echo "Folder CID: $FOLDER_CID"
           echo "cid=$FOLDER_CID" >> $GITHUB_OUTPUT
 
-      # 6️⃣ Pin folder to Pinata
+      # 5️⃣ Pin the folder to Pinata
       - name: Pin folder to Pinata
+        if: secrets.PINATA_JWT != ''
         run: |
           RESPONSE=$(curl -s -X POST "https://api.pinata.cloud/pinning/pinByHash" \
             -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}" \
@@ -47,11 +41,12 @@ jobs:
             -d "{\"hashToPin\":\"${{ steps.ipfs_add.outputs.cid }}\",\"pinataMetadata\":{\"name\":\"html-site-folder\"}}")
           echo "Pinata response: $RESPONSE"
 
-      # 7️⃣ Show working URLs
+      # 6️⃣ Show gateway URLs
       - name: Show gateway URLs
         run: |
           CID=${{ steps.ipfs_add.outputs.cid }}
-          echo "Folder CID: $CID"
+          echo "Your site folder CID: $CID"
+          echo "Test your site on multiple gateways:"
           echo "dweb.link        : https://$CID.ipfs.dweb.link/"
           echo "ipfs.io          : https://ipfs.io/ipfs/$CID/"
           echo "Cloudflare       : https://cloudflare-ipfs.com/ipfs/$CID/"
