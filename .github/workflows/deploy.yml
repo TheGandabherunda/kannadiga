@@ -24,18 +24,28 @@ jobs:
       - name: Build project
         run: npm run build
 
+      - name: Install jq and zip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq zip
+
       - name: Zip build folder
         run: |
-          sudo apt-get install zip -y
-          zip -r site.zip ./build || zip -r site.zip ./dist || zip -r site.zip ./out
+          if [ -d "build" ]; then zip -r site.zip build; fi
+          if [ -d "dist" ]; then zip -r site.zip dist; fi
+          if [ -d "out" ]; then zip -r site.zip out; fi
 
       - name: Upload to Pinata
         id: upload
         run: |
-          CID=$(curl -X POST "https://api.pinata.cloud/pinning/pinFileToIPFS" \
+          RESPONSE=$(curl -X POST "https://api.pinata.cloud/pinning/pinFileToIPFS" \
             -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}" \
-            -F file=@site.zip | jq -r '.IpfsHash')
-          
+            -F file=@site.zip)
+
+          echo "Pinata response: $RESPONSE"
+
+          CID=$(echo "$RESPONSE" | jq -r '.IpfsHash')
+
           echo "cid=$CID" >> $GITHUB_OUTPUT
 
       - name: Show CID
