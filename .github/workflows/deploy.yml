@@ -26,14 +26,13 @@ jobs:
       - name: Add files to IPFS
         id: ipfs_add
         run: |
-          # Add only index.html and assets folder at the root of the CID
           FOLDER_CID=$(ipfs add -r -Q index.html assets)
           echo "Folder CID: $FOLDER_CID"
           echo "cid=$FOLDER_CID" >> $GITHUB_OUTPUT
 
-      # 5️⃣ Pin the folder to Pinata
+      # 5️⃣ Pin the folder to Pinata (only if JWT exists)
       - name: Pin folder to Pinata
-        if: secrets.PINATA_JWT != ''
+        if: ${{ secrets.PINATA_JWT }}
         run: |
           RESPONSE=$(curl -s -X POST "https://api.pinata.cloud/pinning/pinByHash" \
             -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}" \
