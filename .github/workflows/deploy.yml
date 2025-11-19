@@ -12,68 +12,67 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Install zip and jq
-      - name: Install zip and jq
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y zip jq
+      # 2️⃣ Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
 
-      # 3️⃣ Verify site folder exists
-      - name: Verify site folder
-        run: |
-          if [ ! -d "site" ]; then
-            echo "Error: site/ folder not found!"
-            exit 1
-          fi
-          echo "Found site folder, listing contents:"
-          find site -type f
+      # 3️⃣ Install Pinata SDK
+      - name: Install Pinata SDK
+        run: npm install pinata-web3
 
-      # 4️⃣ Zip the site folder (from inside, so paths are clean)
-      - name: Zip site folder
+      # 4️⃣ Create and run upload script
+      - name: Upload to Pinata
+        id: pinata_upload
+        env:
+          PINATA_JWT: ${{ secrets.PINATA_JWT }}
         run: |
-          rm -f site.zip
-          cd site
-          zip -r ../site.zip .
-          cd ..
-          if [ ! -f "site.zip" ]; then
-            echo "Zip failed!"
-            exit 1
-          fi
-          echo "Zip created successfully:"
-          ls -lh site.zip
+          cat << 'SCRIPT_EOF' > upload.mjs
+          import { PinataSDK } from "pinata-web3";
+          import fs from "fs";
 
-      # 5️⃣ Upload to Pinata
-      - name: Upload to Pinata (JWT)
-        id: upload
-        run: |
-          RESPONSE=$(curl -s -X POST "https://api.pinata.cloud/pinning/pinFileToIPFS" \
-            -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}" \
-            -F file=@site.zip)
-          
-          echo "Pinata response: $RESPONSE"
-          
-          CID=$(echo "$RESPONSE" | jq -r '.IpfsHash')
-          
-          if [ "$CID" = "null" ] || [ -z "$CID" ]; then
-            echo "Failed to get CID from Pinata!"
-            exit 1
-          fi
-          
-          echo "cid=$CID" >> $GITHUB_OUTPUT
+          const pinata = new PinataSDK({
+            pinataJwt: process.env.PINATA_JWT
+          });
 
-      # 6️⃣ Show final URLs
+          async function main() {
+            try {
+              console.log("Uploading site folder to Pinata...");
+          
+              const upload = await pinata.upload.folder("site", {
+                name: "site-folder"
+              });
+          
+              console.log("Upload successful!");
+              console.log("CID:", upload.IpfsHash);
+          
+              // Write to GitHub output
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, `cid=${upload.IpfsHash}\n`);
+          
+            } catch (error) {
+              console.error("Upload failed:", error.message);
+              process.exit(1);
+            }
+          }
+
+          main();
+          SCRIPT_EOF
+
+          node upload.mjs
+
+      # 5️⃣ Show final URLs
       - name: Show site URLs
         run: |
           echo "=========================================="
           echo "✅ Deployment Successful!"
           echo "=========================================="
-          echo "CID: ${{ steps.upload.outputs.cid }}"
+          echo "CID: ${{ steps.pinata_upload.outputs.cid }}"
           echo ""
           echo "Access your site at:"
-          echo "🔗 https://gateway.pinata.cloud/ipfs/${{ steps.upload.outputs.cid }}"
-          echo "🔗 https://${{ steps.upload.outputs.cid }}.ipfs.dweb.link/"
-          echo "🔗 https://ipfs.io/ipfs/${{ steps.upload.outputs.cid }}"
+          echo "🔗 https://gateway.pinata.cloud/ipfs/${{ steps.pinata_upload.outputs.cid }}"
+          echo "🔗 https://${{ steps.pinata_upload.outputs.cid }}.ipfs.dweb.link/"
+          echo "🔗 https://ipfs.io/ipfs/${{ steps.pinata_upload.outputs.cid }}"
           echo ""
-          echo "Note: Your files are inside the zip, access index.html at:"
-          echo "🔗 https://gateway.pinata.cloud/ipfs/${{ steps.upload.outputs.cid }}/index.html"
+          echo "Your index.html is at the root and will load automatically!"
           echo "=========================================="
