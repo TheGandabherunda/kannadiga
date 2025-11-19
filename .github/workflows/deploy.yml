@@ -12,7 +12,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Verify site folder exists
+      # 2️⃣ Install Node.js (needed for Pinata CLI)
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # 3️⃣ Verify site folder exists
       - name: Verify site folder
         run: |
           if [ ! -d "site" ]; then
@@ -20,35 +26,29 @@ jobs:
             exit 1
           fi
           echo "Found site folder, listing contents:"
-          ls -R site/
+          find site -type f
 
-      # 3️⃣ Create a tarball of the site folder
-      - name: Create tarball
-        run: |
-          tar -czf site.tar.gz -C site .
-          echo "Tarball created successfully"
-          ls -lh site.tar.gz
-
-      # 4️⃣ Upload folder to Pinata using File Upload API
+      # 4️⃣ Upload folder to Pinata using CLI (preserves structure)
       - name: Upload to Pinata
         id: pinata_upload
         run: |
           echo "Uploading site folder to Pinata..."
           
-          RESPONSE=$(curl -X POST "https://api.pinata.cloud/pinning/pinFileToIPFS" \
-            -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}" \
-            -F "file=@site.tar.gz" \
-            -F "pinataMetadata={\"name\":\"site-folder\"}" \
-            -F "pinataOptions={\"wrapWithDirectory\":false}")
+          # Use Pinata CLI to upload the folder
+          npx pinata upload folder site \
+            --name "site-folder" \
+            --jwt "${{ secrets.PINATA_JWT }}" \
+            --json > pinata_response.json
           
-          echo "Pinata response: $RESPONSE"
+          # Show response
+          cat pinata_response.json
           
-          # Extract CID from response
-          CID=$(echo $RESPONSE | grep -o '"IpfsHash":"[^"]*"' | cut -d'"' -f4)
+          # Extract CID
+          CID=$(cat pinata_response.json | grep -o '"IpfsHash":"[^"]*"' | sed 's/"IpfsHash":"//;s/"//')
           
           if [ -z "$CID" ]; then
-            echo "Error: Failed to extract CID from response"
-            echo "Full response: $RESPONSE"
+            echo "Error: Failed to extract CID"
+            cat pinata_response.json
             exit 1
           fi
           
@@ -67,4 +67,6 @@ jobs:
           echo "🔗 https://gateway.pinata.cloud/ipfs/${{ steps.pinata_upload.outputs.cid }}"
           echo "🔗 https://${{ steps.pinata_upload.outputs.cid }}.ipfs.dweb.link/"
           echo "🔗 https://ipfs.io/ipfs/${{ steps.pinata_upload.outputs.cid }}"
+          echo ""
+          echo "Note: Your index.html will be accessible at the root!"
           echo "=========================================="
