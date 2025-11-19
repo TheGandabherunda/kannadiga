@@ -12,140 +12,54 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Setup Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      # 3️⃣ Install dependencies
-      - name: Install dependencies
-        run: npm install form-data recursive-fs
-
-      # 4️⃣ Create and run upload script
-      - name: Upload to Pinata
-        id: pinata_upload
-        env:
-          PINATA_JWT: ${{ secrets.PINATA_JWT }}
+      # 2️⃣ Install IPFS Kubo
+      - name: Install IPFS Kubo
         run: |
-          cat << 'SCRIPT_EOF' > upload.js
-          const fs = require('fs');
-          const path = require('path');
-          const FormData = require('form-data');
-          const https = require('https');
-          const recursiveFs = require('recursive-fs');
+          wget -q https://dist.ipfs.tech/kubo/v0.24.0/kubo_v0.24.0_linux-amd64.tar.gz
+          tar -xzf kubo_v0.24.0_linux-amd64.tar.gz
+          sudo bash kubo/install.sh
+          ipfs version
 
-          async function uploadDirectory(sourcePath, jwt) {
-            return new Promise((resolve, reject) => {
-              recursiveFs.readdirr(sourcePath, (err, dirs, files) => {
-                if (err) {
-                  reject(err);
-                  return;
-                }
+      # 3️⃣ Add folder to IPFS locally and get CID
+      - name: Add to IPFS
+        id: ipfs_add
+        run: |
+          ipfs init
+          ipfs add -r --quieter site > cid.txt
+          CID=$(cat cid.txt)
+          echo "CID: $CID"
+          echo "cid=$CID" >> $GITHUB_OUTPUT
 
-                const form = new FormData();
+      # 4️⃣ Export as CAR file
+      - name: Export as CAR
+        run: |
+          ipfs dag export ${{ steps.ipfs_add.outputs.cid }} > site.car
+          ls -lh site.car
 
-                // Add each file with its relative path
-                files.forEach(file => {
-                  const relativePath = path.relative(sourcePath, file);
-                  form.append('file', fs.createReadStream(file), {
-                    filepath: relativePath
-                  });
-                  console.log(`Adding: ${relativePath}`);
-                });
-
-                // Add metadata
-                const metadata = JSON.stringify({
-                  name: 'site-folder'
-                });
-                form.append('pinataMetadata', metadata);
-
-                const options = JSON.stringify({
-                  wrapWithDirectory: true
-                });
-                form.append('pinataOptions', options);
-
-                // Make the request
-                const requestOptions = {
-                  method: 'POST',
-                  hostname: 'api.pinata.cloud',
-                  path: '/pinning/pinFileToIPFS',
-                  headers: {
-                    'Authorization': `Bearer ${jwt}`,
-                    ...form.getHeaders()
-                  }
-                };
-
-                const req = https.request(requestOptions, (res) => {
-                  let data = '';
-
-                  res.on('data', (chunk) => {
-                    data += chunk;
-                  });
-
-                  res.on('end', () => {
-                    if (res.statusCode === 200) {
-                      try {
-                        const result = JSON.parse(data);
-                        resolve(result);
-                      } catch (e) {
-                        reject(new Error(`Failed to parse response: ${data}`));
-                      }
-                    } else {
-                      reject(new Error(`Upload failed: ${res.statusCode} - ${data}`));
-                    }
-                  });
-                });
-
-                req.on('error', (error) => {
-                  reject(error);
-                });
-
-                form.pipe(req);
-              });
-            });
-          }
-
-          async function main() {
-            const jwt = process.env.PINATA_JWT;
-            if (!jwt) {
-              console.error('PINATA_JWT not found');
-              process.exit(1);
-            }
-
-            try {
-              console.log('Uploading site folder to Pinata...');
-              const result = await uploadDirectory('./site', jwt);
+      # 5️⃣ Upload CAR to Pinata
+      - name: Upload CAR to Pinata
+        run: |
+          echo "Uploading CAR file to Pinata..."
+          RESPONSE=$(curl -s -X POST "https://api.pinata.cloud/pinning/pinFileToIPFS" \
+            -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}" \
+            -F "file=@site.car")
           
-              console.log('Upload successful!');
-              console.log('CID:', result.IpfsHash);
+          echo "Pinata response: $RESPONSE"
           
-              // Write to GitHub output
-              fs.appendFileSync(process.env.GITHUB_OUTPUT, `cid=${result.IpfsHash}\n`);
-          
-            } catch (error) {
-              console.error('Upload failed:', error.message);
-              process.exit(1);
-            }
-          }
+          PINATA_CID=$(echo "$RESPONSE" | jq -r '.IpfsHash')
+          echo "Pinata CID: $PINATA_CID"
 
-          main();
-          SCRIPT_EOF
-
-          node upload.js
-
-      # 5️⃣ Show final URLs
+      # 6️⃣ Show final URLs
       - name: Show site URLs
         run: |
           echo "=========================================="
           echo "✅ Deployment Successful!"
           echo "=========================================="
-          echo "CID: ${{ steps.pinata_upload.outputs.cid }}"
+          echo "CID: ${{ steps.ipfs_add.outputs.cid }}"
           echo ""
           echo "Access your site at:"
-          echo "🔗 https://gateway.pinata.cloud/ipfs/${{ steps.pinata_upload.outputs.cid }}"
-          echo "🔗 https://${{ steps.pinata_upload.outputs.cid }}.ipfs.dweb.link/"
-          echo "🔗 https://ipfs.io/ipfs/${{ steps.pinata_upload.outputs.cid }}"
+          echo "🔗 https://ipfs.io/ipfs/${{ steps.ipfs_add.outputs.cid }}/"
+          echo "🔗 https://${{ steps.ipfs_add.outputs.cid }}.ipfs.dweb.link/"
           echo ""
-          echo "Your index.html will be at the root!"
+          echo "Note: The CID is also pinned on Pinata"
           echo "=========================================="
