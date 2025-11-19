@@ -10,44 +10,48 @@ async function run() {
     const pinName = core.getInput('pin-name');
 
     const pinata = new PinataSDK({ pinataJwt });
+
     await pinata.testAuthentication();
     console.log('✅ Pinata authentication successful');
 
-    if (!fs.existsSync(sourceDir)) throw new Error(`Source directory ${sourceDir} does not exist`);
+    if (!fs.existsSync(sourceDir)) {
+      throw new Error(`Source directory ${sourceDir} does not exist`);
+    }
 
+    // Gather all files from sourceDir
     const files = await getAllFiles(sourceDir);
-    console.log(`📁 Found ${files.length} files to upload`);
+    console.log(`📁 Found ${files.length} files`);
 
+    // Upload files
     const result = await pinata.upload.public.fileArray(files)
       .name(pinName);
 
     console.log('✅ Upload successful!');
     console.log(`📍 IPFS Hash: ${result.cid}`);
-    console.log(`🌍 Gateway URL: https://gateway.pinata.cloud/ipfs/${result.cid}`);
-
     core.setOutput('ipfs-hash', result.cid);
     core.setOutput('gateway-url', `https://gateway.pinata.cloud/ipfs/${result.cid}`);
 
-  } catch (error) {
-    core.setFailed(`Action failed: ${error.message}`);
+  } catch (err) {
+    core.setFailed(err.message);
   }
 }
 
-async function getAllFiles(dir, array = []) {
-  const files = fs.readdirSync(dir);
-  for (const file of files) {
-    const fullPath = path.join(dir, file);
+async function getAllFiles(dir, arr = []) {
+  const entries = fs.readdirSync(dir);
+
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry);
     if (fs.statSync(fullPath).isDirectory()) {
-      await getAllFiles(fullPath, array);
+      arr = await getAllFiles(fullPath, arr);
     } else {
-      const content = fs.readFileSync(fullPath);
-      const blob = new Blob([content]);
-      const relative = path.relative(process.cwd(), fullPath);
-      const fileObj = new File([blob], relative);
-      array.push(fileObj);
+      arr.push({
+        path: path.relative(process.cwd(), fullPath),
+        content: fs.readFileSync(fullPath)
+      });
     }
   }
-  return array;
+
+  return arr;
 }
 
 run();
