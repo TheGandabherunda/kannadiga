@@ -20,13 +20,19 @@ async function uploadDirectoryToPinata() {
 
     console.log(`📁 Preparing to upload directory: ${sourceDir}`);
 
-    // Get the base folder name - THIS IS CRITICAL!
+    // Get the base folder name
     const baseFolderName = path.basename(sourceDir);
     console.log(`📦 Base folder name: ${baseFolderName}`);
 
     // Create FormData
     const formData = new FormData();
 
+    // First, add the pinataMetadata - THIS MUST COME FIRST!
+    formData.append('pinataMetadata', JSON.stringify({
+      name: baseFolderName
+    }));
+
+    // Then add all the files
     function addFilesToFormData(dir, baseDir = dir) {
       const items = fs.readdirSync(dir, { withFileTypes: true });
 
@@ -36,10 +42,12 @@ async function uploadDirectoryToPinata() {
         if (item.isDirectory()) {
           addFilesToFormData(fullPath, baseDir);
         } else {
-          // Get relative path from the parent of baseDir to include folder name
+          // Keep relative path from the base directory
           const relativePath = path.join(baseFolderName, path.relative(baseDir, fullPath));
           console.log(`   - ${relativePath}`);
           const fileStream = fs.createReadStream(fullPath);
+
+          // Append with the relative path to preserve directory structure
           formData.append('file', fileStream, {
             filepath: relativePath
           });
@@ -48,11 +56,6 @@ async function uploadDirectoryToPinata() {
     }
 
     addFilesToFormData(sourceDir);
-
-    // CRITICAL: The metadata name MUST match the base folder name!
-    formData.append('pinataMetadata', JSON.stringify({
-      name: baseFolderName
-    }));
 
     console.log("🚀 Uploading to Pinata...");
 
@@ -75,11 +78,12 @@ async function uploadDirectoryToPinata() {
     console.log("✅ Upload successful!");
     console.log(`📌 CID: ${upload.IpfsHash}`);
     console.log(`🔗 IPFS Gateway: https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}`);
-    console.log(`📄 Your files are at: https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}/`);
+    console.log(`📄 Your site: https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}/${baseFolderName}/index.html`);
 
     // Set outputs
     core.setOutput("cid", upload.IpfsHash);
     core.setOutput("ipfs_url", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}`);
+    core.setOutput("site_url", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}/${baseFolderName}/index.html`);
     core.setOutput("pin_size", upload.PinSize);
     core.setOutput("timestamp", upload.Timestamp);
 
@@ -90,10 +94,11 @@ async function uploadDirectoryToPinata() {
         [{ data: "Property", header: true }, { data: "Value", header: true }],
         ["CID", upload.IpfsHash],
         ["IPFS URL", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}`],
+        ["Site URL", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}/${baseFolderName}/index.html`],
         ["Pin Size", `${upload.PinSize} bytes`],
         ["Timestamp", upload.Timestamp],
       ])
-      .addLink("🌐 View Your Files", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}/`)
+      .addLink("🌐 View Your Site", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}/${baseFolderName}/index.html`)
       .write();
 
   } catch (error) {
