@@ -1,14 +1,14 @@
 name: Deploy HTML to Pinata (IPFS)
 
 on:
-  workflow_dispatch:   # Allows manual trigger from GitHub Actions tab
+  workflow_dispatch:  # Manual trigger
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout code
+      # 1️⃣ Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -18,11 +18,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y zip jq
 
-      # 3️⃣ Zip project folder
-      - name: Zip HTML project
+      # 3️⃣ Zip only the site folder
+      - name: Zip site folder
         run: |
           rm -f site.zip
-          zip -r site.zip . -x ".git/*" ".github/*"
+          cd site
+          zip -r ../site.zip .
+          cd ..
           if [ ! -f "site.zip" ]; then echo "Zip failed!" && exit 1; fi
 
       # 4️⃣ Upload to Pinata
