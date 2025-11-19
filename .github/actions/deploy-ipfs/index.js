@@ -38,8 +38,8 @@ async function uploadDirectoryToPinata() {
         if (item.isDirectory()) {
           addFilesToFormData(fullPath, baseDir);
         } else {
-          // Keep relative path from the base directory
-          const relativePath = path.join(baseFolderName, path.relative(baseDir, fullPath));
+          // Get relative path WITHOUT prepending the base folder name
+          const relativePath = path.relative(baseDir, fullPath);
           console.log(`   - ${relativePath}`);
           const fileStream = fs.createReadStream(fullPath);
 
@@ -77,12 +77,12 @@ async function uploadDirectoryToPinata() {
     console.log("✅ Upload successful!");
     console.log(`📌 CID: ${upload.IpfsHash}`);
     console.log(`🔗 IPFS Gateway: https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}`);
-    console.log(`📄 Your site: https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}/${baseFolderName}/index.html`);
+    console.log(`📄 Your site: https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}/index.html`);
 
     // Set outputs
     core.setOutput("cid", upload.IpfsHash);
     core.setOutput("ipfs_url", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}`);
-    core.setOutput("site_url", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}/${baseFolderName}/index.html`);
+    core.setOutput("site_url", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}/index.html`);
     core.setOutput("pin_size", upload.PinSize);
     core.setOutput("timestamp", upload.Timestamp);
 
@@ -93,11 +93,11 @@ async function uploadDirectoryToPinata() {
         [{ data: "Property", header: true }, { data: "Value", header: true }],
         ["CID", upload.IpfsHash],
         ["IPFS URL", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}`],
-        ["Site URL", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}/${baseFolderName}/index.html`],
+        ["Site URL", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}/index.html`],
         ["Pin Size", `${upload.PinSize} bytes`],
         ["Timestamp", upload.Timestamp],
       ])
-      .addLink("🌐 View Your Site", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}/${baseFolderName}/index.html`)
+      .addLink("🌐 View Your Site", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}/index.html`)
       .write();
 
   } catch (error) {
