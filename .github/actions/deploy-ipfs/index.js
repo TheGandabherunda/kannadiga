@@ -1,10 +1,9 @@
-import { PinataSDK } from "pinata";
 import * as core from "@actions/core";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-import FormData from "form-data";
+import { Readable } from "stream";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -21,57 +20,61 @@ async function uploadDirectoryToPinata() {
 
     console.log(`📁 Preparing to upload directory: ${sourceDir}`);
 
-    // Count files for logging
-    let fileCount = 0;
-    function countFiles(dir) {
-      const items = fs.readdirSync(dir, { withFileTypes: true });
-      for (const item of items) {
-        const fullPath = path.join(dir, item.name);
-        if (item.isDirectory()) {
-          countFiles(fullPath);
-        } else {
-          fileCount++;
-          console.log(`   - ${path.relative(sourceDir, fullPath)}`);
-        }
-      }
-    }
+    // Collect all files
+    const files = [];
 
-    countFiles(sourceDir);
-    console.log(`📦 Found ${fileCount} files to upload`);
-
-    // Create FormData and add files with proper directory structure
-    const formData = new FormData();
-
-    function addFilesToFormData(dir, baseDir = dir) {
+    function collectFiles(dir, baseDir = dir) {
       const items = fs.readdirSync(dir, { withFileTypes: true });
 
       for (const item of items) {
         const fullPath = path.join(dir, item.name);
 
         if (item.isDirectory()) {
-          addFilesToFormData(fullPath, baseDir);
+          collectFiles(fullPath, baseDir);
         } else {
           const relativePath = path.relative(baseDir, fullPath);
-          const fileStream = fs.createReadStream(fullPath);
-          // Use 'file' as the field name with the relative path
-          formData.append('file', fileStream, {
-            filepath: relativePath
+          files.push({
+            path: fullPath,
+            name: relativePath
           });
+          console.log(`   - ${relativePath}`);
         }
       }
     }
 
-    addFilesToFormData(sourceDir);
+    collectFiles(sourceDir);
+    console.log(`📦 Found ${files.length} files to upload`);
+
+    // Create boundary for multipart/form-data
+    const boundary = `----WebKitFormBoundary${Math.random().toString(36).substring(2)}`;
+
+    // Build the multipart body manually
+    let body = '';
+
+    for (const file of files) {
+      const fileContent = fs.readFileSync(file.path);
+      const mimeType = getMimeType(file.name);
+
+      body += `--${boundary}\r\n`;
+      body += `Content-Disposition: form-data; name="file"; filename="${file.name}"\r\n`;
+      body += `Content-Type: ${mimeType}\r\n\r\n`;
+      body += fileContent.toString('binary');
+      body += '\r\n';
+    }
 
     // Add metadata
-    formData.append('pinataMetadata', JSON.stringify({
-      name: 'kannadiga-site'
-    }));
+    body += `--${boundary}\r\n`;
+    body += `Content-Disposition: form-data; name="pinataMetadata"\r\n\r\n`;
+    body += JSON.stringify({ name: 'kannadiga-site' });
+    body += '\r\n';
 
-    // Add options to wrap with directory
-    formData.append('pinataOptions', JSON.stringify({
-      wrapWithDirectory: true
-    }));
+    // Add options
+    body += `--${boundary}\r\n`;
+    body += `Content-Disposition: form-data; name="pinataOptions"\r\n\r\n`;
+    body += JSON.stringify({ wrapWithDirectory: true });
+    body += '\r\n';
+
+    body += `--${boundary}--\r\n`;
 
     console.log("🚀 Uploading to Pinata...");
 
@@ -79,9 +82,9 @@ async function uploadDirectoryToPinata() {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${pinataJwt}`,
-        ...formData.getHeaders()
+        'Content-Type': `multipart/form-data; boundary=${boundary}`
       },
-      body: formData
+      body: Buffer.from(body, 'binary')
     });
 
     if (!response.ok) {
@@ -94,14 +97,11 @@ async function uploadDirectoryToPinata() {
     console.log("✅ Upload successful!");
     console.log(`📌 CID: ${upload.IpfsHash}`);
     console.log(`🔗 IPFS URL: https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}`);
-    console.log(`📄 Access your site: https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}/index.html`);
 
-    // Set outputs for use in other workflow steps
+    // Set outputs
     core.setOutput("cid", upload.IpfsHash);
     core.setOutput("ipfs_url", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}`);
-    core.setOutput("site_url", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}/index.html`);
     core.setOutput("pin_size", upload.PinSize);
-    core.setOutput("timestamp", upload.Timestamp);
 
     // Create a summary
     await core.summary
@@ -110,18 +110,38 @@ async function uploadDirectoryToPinata() {
         [{ data: "Property", header: true }, { data: "Value", header: true }],
         ["CID", upload.IpfsHash],
         ["IPFS URL", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}`],
-        ["Site URL", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}/index.html`],
         ["Pin Size", upload.PinSize.toString()],
-        ["Files Uploaded", fileCount.toString()],
-        ["Timestamp", upload.Timestamp],
+        ["Files", files.length.toString()],
       ])
-      .addLink("🌐 View Your Site", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}/index.html`)
+      .addLink("🌐 View on IPFS", `https://gateway.pinata.cloud/ipfs/${upload.IpfsHash}`)
       .write();
 
   } catch (error) {
     console.error("❌ Deployment failed:", error);
+    console.error("Error details:", error.stack);
     core.setFailed(error.message);
   }
+}
+
+function getMimeType(filename) {
+  const ext = path.extname(filename).toLowerCase();
+  const mimeTypes = {
+    ".html": "text/html",
+    ".css": "text/css",
+    ".js": "application/javascript",
+    ".json": "application/json",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
+    ".svg": "image/svg+xml",
+    ".webp": "image/webp",
+    ".woff": "font/woff",
+    ".woff2": "font/woff2",
+    ".ttf": "font/ttf",
+    ".txt": "text/plain",
+  };
+  return mimeTypes[ext] || "application/octet-stream";
 }
 
 // Run the upload
