@@ -4,7 +4,7 @@
   "description": "Upload src folder to Pinata",
   "main": "index.js",
   "dependencies": {
-    "pinata": "^1.0.0",
+    "pinata": "latest",
     "mime-types": "^2.1.35"
   }
 }
