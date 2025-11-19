@@ -1,0 +1,42 @@
+name: Deploy to Pinata (IPFS)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Zip build folder
+        run: |
+          sudo apt-get install zip -y
+          zip -r site.zip ./build || zip -r site.zip ./dist || zip -r site.zip ./out
+
+      - name: Upload to Pinata
+        id: upload
+        run: |
+          CID=$(curl -X POST "https://api.pinata.cloud/pinning/pinFileToIPFS" \
+            -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}" \
+            -F file=@site.zip | jq -r '.IpfsHash')
+          
+          echo "cid=$CID" >> $GITHUB_OUTPUT
+
+      - name: Show CID
+        run: echo "New IPFS CID: ${{ steps.upload.outputs.cid }}"
