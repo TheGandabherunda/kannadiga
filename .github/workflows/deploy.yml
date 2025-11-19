@@ -8,32 +8,45 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # 2️⃣ Install IPFS CLI
       - name: Install IPFS CLI
         run: |
           curl -fsSL https://dist.ipfs.io/go-ipfs/v0.22.0/go-ipfs_v0.22.0_linux-amd64.tar.gz | tar -xz
           sudo mv go-ipfs/ipfs /usr/local/bin/
 
+      # 3️⃣ Initialize temporary IPFS repo
       - name: Init IPFS repo
         run: ipfs init
 
+      # 4️⃣ Add files to IPFS directly at root
       - name: Add files to IPFS
         id: ipfs_add
         run: |
           FOLDER_CID=$(ipfs add -r -Q index.html assets)
+          echo "Folder CID: $FOLDER_CID"
           echo "cid=$FOLDER_CID" >> $GITHUB_OUTPUT
 
+      # 5️⃣ Pin folder to Pinata safely
       - name: Pin folder to Pinata
-        if: ${{ secrets.PINATA_JWT }}
+        env:
+          PINATA_JWT: ${{ secrets.PINATA_JWT }}
         run: |
+          if [ -z "$PINATA_JWT" ]; then
+            echo "PINATA_JWT not set, skipping Pinata pin."
+            exit 0
+          fi
+
           RESPONSE=$(curl -s -X POST "https://api.pinata.cloud/pinning/pinByHash" \
-            -H "Authorization: Bearer ${{ secrets.PINATA_JWT }}" \
+            -H "Authorization: Bearer $PINATA_JWT" \
             -H "Content-Type: application/json" \
             -d "{\"hashToPin\":\"${{ steps.ipfs_add.outputs.cid }}\",\"pinataMetadata\":{\"name\":\"html-site-folder\"}}")
           echo "Pinata response: $RESPONSE"
 
+      # 6️⃣ Show working gateway URLs
       - name: Show gateway URLs
         run: |
           CID=${{ steps.ipfs_add.outputs.cid }}
