@@ -123,6 +123,7 @@ window.initSVGLights = function() {
     const specularElement = document.getElementById('specular-element');
 
     // Original viewBox dimensions
+    // These remain constant as they describe the SVG's internal coordinate system
     const vbWidth = 72;
     const vbHeight = 97;
 
@@ -131,7 +132,7 @@ window.initSVGLights = function() {
         // Guard clause
         if (!lightSource || !diffuseSource) return;
 
-        // Get updated rect
+        // Get updated rect (This will automatically account for the new 80px width)
         const logoRect = logoWrapper.getBoundingClientRect();
 
         // 1. Calculate Center of the Logo

@@ -182,7 +182,8 @@ body {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
     background-image: url('assets/leather-macro-shot.jpg');
-    background-size: 150px auto;
+    /* Scaled appropriately for 80px width (approx 1.11x) */
+    background-size: 166px auto;
     opacity: 0.4;
     mix-blend-mode: luminosity;
     pointer-events: none;
@@ -193,8 +194,9 @@ body {
     content: "";
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
+    /* Scaled radius appropriately for 80px width */
     background: radial-gradient(
-        circle 80px at var(--light-x) var(--light-y),
+        circle 90px at var(--light-x) var(--light-y),
         rgba(255, 255, 255, 0.4) 0%,
         rgba(255, 255, 255, 0) 100%
     );
@@ -208,7 +210,8 @@ body {
 svg {
     position: relative;
     z-index: 2;
-    width: 72px;
+    /* CHANGED: Width updated to 80px */
+    width: 80px;
     height: auto;
     overflow: visible;
     pointer-events: none;
