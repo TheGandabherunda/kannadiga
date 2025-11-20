@@ -8,7 +8,8 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@600&family=Noto+Serif+Kannada:wght@600&display=swap" rel="stylesheet">
+    <!-- CHANGED: Removed Noto Sans Kannada (now local), Kept Inter and Noto Serif Kannada -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;1,400&family=Noto+Serif+Kannada:wght@600&display=swap" rel="stylesheet">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -19,13 +20,14 @@
     <!-- External CSS -->
     <link rel="stylesheet" href="styles.css">
 
-    <!-- Prevent FOUC (Flash of Unstyled Content) by hiding elements initially -->
+    <!-- Prevent FOUC -->
     <style>
         .loading-text-left,
         .container,
         .kannada-text,
-        .loading-text-right {
-            visibility: hidden; /* GSAP will handle making them visible */
+        .loading-text-right,
+        .definition-wrapper {
+            visibility: hidden;
         }
     </style>
 </head>
@@ -34,21 +36,28 @@
 <!-- Custom Cursor Element -->
 <div id="custom-cursor"></div>
 
-<!-- LEFT TEXT: Kannada Identity -->
+<!-- LEFT TEXT -->
 <div class="loading-text-left">ಸಿರಿಗನ್ನಡಂ ಗೆಲ್ಗೆ . ಸಿರಿಗನ್ನಡಂ ಬಾಳ್ಗೆ</div>
 
 <!-- CENTER: Logo Container -->
 <div class="container" id="interaction-container">
     <div class="logo-wrapper" id="logoWrapper">
-        <!-- SVG will be injected here -->
+        <!-- SVG injected here -->
     </div>
 </div>
 
-<!-- BOTTOM TEXT: kannada -->
+<!-- BOTTOM TEXT -->
 <div class="kannada-text">ಕನ್ನಡಿಗ</div>
 
-<!-- RIGHT TEXT: Loading Counter -->
+<!-- RIGHT TEXT -->
 <div class="loading-text-right" id="loadingCounter">೦೦</div>
+
+<!-- NEW: Definition Text Wrapper -->
+<div class="definition-wrapper">
+    <p class="def-text def-pronunciation">♪ kannaḍiga</p>
+    <p class="def-text def-noun">noun</p>
+    <p class="def-text def-desc">a man whose mother tongue is Kannaḍa;<br>a man belonging to Karnāṭaka.</p>
+</div>
 
 <script>
     // --- CONFIGURATION ---
@@ -57,11 +66,8 @@
     // Elements
     const logoWrapperEl = document.getElementById('logoWrapper');
     const counterEl = document.getElementById('loadingCounter');
-
-    // Kannada Digits Map
     const kannadaDigits = ['೦','೧','೨','೩','೪','೫','೬','೭','೮','೯'];
 
-    // Helper: Convert number to Kannada string
     function toKannadaNum(num) {
         const numStr = num.toString().padStart(2, '0');
         return numStr.split('').map(digit => kannadaDigits[parseInt(digit)]).join('');
@@ -70,46 +76,60 @@
     // --- GSAP ENTRANCE ANIMATION ---
     function runIntroAnimation() {
         const tl = gsap.timeline({
-            onComplete: startAppLogic // Run counter/colors AFTER animation
+            onComplete: startAppLogic
         });
 
-        // Group 1: Top Row Elements
         const topRowElements = [
             '.loading-text-left',
             '.container',
             '.loading-text-right'
         ];
-
-        // Group 2: kannada
         const kannadaElement = '.kannada-text';
 
-        // 1. Set Initial State (Blurry, slightly down, transparent)
-        gsap.set([...topRowElements, kannadaElement], {
-            autoAlpha: 0,      // Opacity + Visibility
-            y: 50,             // Start 50px down
-            filter: "blur(10px)" // Smooth blur effect
+        // 1. Strict Initialization for Centering
+        gsap.set(".container", {
+            xPercent: -50,
+            yPercent: -50
         });
 
-        // 2. Animate Top Row First (Simultaneous)
+        gsap.set([".loading-text-left", ".loading-text-right"], {
+            yPercent: -50
+        });
+
+        gsap.set(kannadaElement, {
+            xPercent: -50,
+            autoAlpha: 0,
+            y: 50,
+            filter: "blur(10px)"
+        });
+
+        // 2. Initialize Shared Start State
+        gsap.set(topRowElements, {
+            autoAlpha: 0,
+            y: 50,
+            filter: "blur(10px)"
+        });
+
+        // 3. Animate Top Row
         tl.to(topRowElements, {
-            duration: 2.0,     // UPDATED: Slower appearing (was 1.5)
+            duration: 2.0,
             autoAlpha: 1,
             y: 0,
             filter: "blur(0px)",
-            stagger: 0,        // No stagger, all appear at same time
-            ease: "expo.inOut" // CURVE: Expo InOut
+            stagger: 0,
+            ease: "expo.inOut"
         })
-        // 3. Animate kannada Second (With Adjusted Delay)
+        // 4. Animate Bottom Text
         .to(kannadaElement, {
-            duration: 2.0,     // UPDATED: Slower appearing (was 1.5)
+            duration: 2.0,
             autoAlpha: 1,
             y: 0,
             filter: "blur(0px)",
-            ease: "expo.inOut" // CURVE: Expo InOut
-        }, "-=1.9"); // UPDATED: Starts 0.1s after top row (2.0 - 1.9 = 0.1s delay)
+            ease: "expo.inOut"
+        }, "-=1.9");
     }
 
-    // --- GSAP EXIT ANIMATION (ONBOARDING TRANSITION) ---
+    // --- GSAP EXIT ANIMATION ---
     function runExitAnimation() {
         const tl = gsap.timeline();
 
@@ -117,49 +137,93 @@
         const kannadaText = document.querySelector('.kannada-text');
         const leftText = document.querySelector('.loading-text-left');
         const rightText = document.querySelector('.loading-text-right');
+        const defWrapper = document.querySelector('.definition-wrapper');
+        const defLines = document.querySelectorAll('.def-text');
 
         // --- DYNAMIC CALCULATIONS ---
-        // We calculate exact pixels to ensure perfect 140px spacing regardless of screen size
-
-        // 1. Get Geometry
         const containerRect = container.getBoundingClientRect();
         const textRect = kannadaText.getBoundingClientRect();
 
-        // 2. Calculate Logo Move
-        // Target: Top of logo should be 140px from viewport top
-        // Current: containerRect.top
+        // 1. Calculate Visual Alignment
+        // We need to know how wide the text WILL be at 32px to align definitions to its start.
+        const currentFontSize = window.getComputedStyle(kannadaText).fontSize;
+        kannadaText.style.fontSize = "32px"; // Temporarily set to final size
+        const titleWidthAt32 = kannadaText.offsetWidth;
+        kannadaText.style.fontSize = currentFontSize; // Reset immediately
+
+        // Calculate left position: Center of screen - half of title width
+        const screenCenter = window.innerWidth / 2;
+        const titleLeftStart = screenCenter - (titleWidthAt32 / 2);
+
+        // Fix Anchor for Text Growth
+        gsap.set(kannadaText, {
+            top: textRect.top,
+            bottom: "auto",
+            y: 0
+        });
+
+        // 2. Calculate Vertical Moves
         const targetLogoTop = 140;
         const logoMoveY = targetLogoTop - containerRect.top;
 
-        // 3. Calculate Text Move
-        // Target: Text should be below logo (140 + height) + 16px spacing
         const targetTextTop = targetLogoTop + containerRect.height + 16;
         const textMoveY = targetTextTop - textRect.top;
 
-        // --- ANIMATION SEQUENCE ---
+        // 3. Position Definition Wrapper
+        // We place it vertically below the final title position.
+        // We place it horizontally at the EXACT start of the title.
+        const titleHeightApprox = 48;
+        const defStartY = targetTextTop + titleHeightApprox + 16;
+
+        gsap.set(defWrapper, {
+            top: defStartY,
+            left: titleLeftStart, // Align specifically to the left edge
+            xPercent: 0, // Remove centering transform so 'left' is absolute
+            autoAlpha: 1,
+            visibility: "visible"
+        });
+
+        gsap.set(defLines, {
+            autoAlpha: 0,
+            y: 20,
+            filter: "blur(10px)"
+        });
+
+        // --- ANIMATION TIMELINE ---
         tl
-        // 1. Fade OUT Side Texts (Move UP, Blur, Fade) - Reverse of Entry
+        // Step 1: Fade out side texts
         .to([leftText, rightText], {
-            duration: 1.5,       // Sync duration
-            y: -50,              // Move Up
-            autoAlpha: 0,        // Fade out
-            filter: "blur(10px)", // Blur out
-            ease: "expo.inOut"   // CURVE: Expo InOut
+            duration: 1.5,
+            y: -50,
+            autoAlpha: 0,
+            filter: "blur(10px)",
+            ease: "expo.inOut"
         })
-        // 2. Move Logo and Bottom Text to new positions
+        // Step 2: Move Logo UP
         .to(container, {
             duration: 1.5,
-            y: "+=" + logoMoveY, // Move relative to current position
-            ease: "expo.inOut"   // CURVE: Expo InOut
-        }, "<") // "<" starts this tween exactly when previous starts (SAME TIME)
+            y: "+=" + logoMoveY,
+            ease: "expo.inOut"
+        }, "<")
+        // Step 3: Move Title UP & Scale
         .to(kannadaText, {
             duration: 1.5,
-            y: "+=" + textMoveY, // Move relative to current position
-            ease: "expo.inOut"   // CURVE: Expo InOut
-        }, "<"); // Sync exactly with logo move
+            y: "+=" + textMoveY,
+            fontSize: "32px",
+            ease: "expo.inOut"
+        }, "<")
+        // Step 4: Animate Definitions IN
+        .to(defLines, {
+            duration: 0.8, // Faster appear
+            autoAlpha: 1,
+            y: 0,
+            filter: "blur(0px)",
+            stagger: 0.1, // Faster stagger
+            ease: "expo.out"
+        }, "-=0.5");
     }
 
-    // --- APP LOGIC (Colors & Counter) ---
+    // --- APP LOGIC ---
     let colorInterval;
     let lastColorIndex = -1;
 
@@ -174,11 +238,9 @@
             do {
                 newIndex = Math.floor(Math.random() * preloadColors.length);
             } while (newIndex === lastColorIndex);
-
             lastColorIndex = newIndex;
             logoWrapperEl.style.backgroundColor = preloadColors[newIndex];
         };
-
         setRandomColor();
         colorInterval = setInterval(setRandomColor, 300);
     }
@@ -188,16 +250,12 @@
     }
 
     function startCounter() {
-        // REPLACED setInterval WITH GSAP TWEEN
-        // This ensures the counting numbers also follow the Expo InOut curve
         const progress = { val: 0 };
-
         gsap.to(progress, {
             val: 100,
-            duration: 3,        // 3 seconds
-            ease: "expo.inOut", // CURVE: Expo InOut (Applied to the counting itself)
+            duration: 3,
+            ease: "expo.inOut",
             onUpdate: function() {
-                // Update text with current integer value
                 counterEl.textContent = toKannadaNum(Math.floor(progress.val));
             },
             onComplete: function() {
@@ -207,33 +265,20 @@
         });
     }
 
-    // --- INITIALIZATION & FETCHING ---
-
-    // Fetch SVG -> Inject -> Run Animation
+    // --- INIT ---
     fetch('assets/metal.svg')
         .then(response => response.text())
         .then(svgContent => {
-            // 1. Inject content
             document.getElementById('logoWrapper').innerHTML = svgContent;
-
-            // 2. Start the Entrance Animation
             runIntroAnimation();
-
-            // 3. Initialize SVG Interaction (defined in script.js)
-            if (window.initSVGLights) {
-                window.initSVGLights();
-            }
+            if (window.initSVGLights) window.initSVGLights();
         })
         .catch(err => {
             console.error('Error loading SVG:', err);
-            // Fallback: run logic anyway if SVG fails
             startAppLogic();
         });
 
 </script>
-
-<!-- Load external script normally so Custom Cursor works immediately -->
 <script src="script.js"></script>
-
 </body>
 </html>

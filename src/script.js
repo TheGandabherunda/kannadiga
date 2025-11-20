@@ -23,42 +23,53 @@ let isTextHover = false;
 let currentTextHeight = 0;
 
 // Define text elements that trigger the shape change
-// Specific classes + generic text tags
-const textSelectors = '.loading-text-left, .loading-text-right, .kannada-text, p, h1, h2, h3, h4, h5, h6, span';
+// Added '.def-text' to the selectors
+const textSelectors = '.loading-text-left, .loading-text-right, .kannada-text, .def-text, p, h1, h2, h3, h4, h5, h6, span';
 
 // Add listeners to all matching elements
-document.querySelectorAll(textSelectors).forEach(el => {
-    el.addEventListener('mouseenter', () => {
-        isTextHover = true;
+// Use event delegation or re-query if elements are dynamic,
+// but since these exist in DOM (just hidden), simple querySelectorAll works.
+const attachHoverListeners = () => {
+    document.querySelectorAll(textSelectors).forEach(el => {
+        // Prevent duplicate listeners if run multiple times
+        if(el.dataset.cursorAttached) return;
+        el.dataset.cursorAttached = "true";
 
-        // Calculate font size of the hovered text
-        const style = window.getComputedStyle(el);
-        const fontSize = parseFloat(style.fontSize);
-        currentTextHeight = fontSize;
+        el.addEventListener('mouseenter', () => {
+            isTextHover = true;
 
-        // Smooth transition to Text Cursor (Bar)
-        // Width 2px, Height = Font Size
-        gsap.to(cursor, {
-            width: 2,
-            height: fontSize,
-            duration: 0.3,
-            ease: "expo.out"
+            // Calculate font size of the hovered text
+            const style = window.getComputedStyle(el);
+            const fontSize = parseFloat(style.fontSize);
+            currentTextHeight = fontSize;
+
+            // Smooth transition to Text Cursor (Bar)
+            // Width 2px, Height = Font Size
+            gsap.to(cursor, {
+                width: 2,
+                height: fontSize,
+                duration: 0.3,
+                ease: "expo.out"
+            });
+        });
+
+        el.addEventListener('mouseleave', () => {
+            isTextHover = false;
+
+            // Smooth transition back to Default Cursor (Square)
+            // 14x14
+            gsap.to(cursor, {
+                width: 14,
+                height: 14,
+                duration: 0.3,
+                ease: "expo.out"
+            });
         });
     });
+};
 
-    el.addEventListener('mouseleave', () => {
-        isTextHover = false;
-
-        // Smooth transition back to Default Cursor (Square)
-        // 14x14
-        gsap.to(cursor, {
-            width: 14,
-            height: 14,
-            duration: 0.3,
-            ease: "expo.out"
-        });
-    });
-});
+// Run initially
+attachHoverListeners();
 
 // --- 3. CLICK INTERACTION ---
 window.addEventListener('mousedown', () => {

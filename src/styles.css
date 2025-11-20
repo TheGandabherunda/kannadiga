@@ -1,16 +1,36 @@
+/* --- FONT FACE DEFINITIONS --- */
+@font-face {
+    font-family: 'Noto Sans Kannada UI';
+    src: url('assets/fonts/NotoSansKannadaUI-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Noto Sans Kannada UI';
+    src: url('assets/fonts/NotoSansKannadaUI-SemiBold.ttf') format('truetype');
+    font-weight: 600;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Noto Sans Kannada UI';
+    src: url('assets/fonts/NotoSansKannadaUI-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+}
+
 /* --- GLOBAL CURSOR RESET --- */
 * {
     cursor: none !important;
 }
 
 /* --- TEXT SELECTION HIGHLIGHT --- */
-/* This makes selected text have a black background and white text */
 ::selection {
     background-color: #000000;
     color: #FFFFFF;
 }
 
-/* Firefox support */
 ::-moz-selection {
     background-color: #000000;
     color: #FFFFFF;
@@ -35,26 +55,21 @@ body {
     position: fixed;
     top: 0;
     left: 0;
-
-    /* Dimensions: Start 14x14 */
     width: 14px;
     height: 14px;
-
-    /* Color: White with Difference blending creates BLACK on light backgrounds
-       and INVERTED on dark elements */
     background-color: #FFFFFF;
     mix-blend-mode: difference;
-
     pointer-events: none;
     z-index: 9999;
-
-    /* Initial centering for GSAP */
-    transform: translate(-50%, -50%);
-    border-radius: 0; /* Square */
+    border-radius: 0;
 }
 
+/* --- CENTER CONTAINER (LOGO) --- */
 .container {
-    position: relative;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    /* Centering handled by GSAP */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -63,54 +78,44 @@ body {
 
 .logo-wrapper {
     position: relative;
-    background-color: #FF0000; /* Initial Color */
+    background-color: #FF0000;
     padding: 4px;
     display: inline-block;
     line-height: 0;
     box-shadow: none;
-
-    /* CSS Variables */
     --light-x: 50%;
     --light-y: 50%;
     --glow-opacity: 0;
-
     pointer-events: auto;
-
-    /* Abrupt background color changes */
     transition: opacity 0.1s linear;
 }
 
 /* --- TEXT ELEMENTS STYLING --- */
 
-/* 1. Extreme Left Text (Kannada Identity) */
+/* 1. Extreme Left Text */
 .loading-text-left {
     position: absolute;
     left: 32px;
     top: 50%;
-    transform: translateY(-50%);
     z-index: 10;
-
-    /* Typography Settings */
-    font-family: 'Noto Sans Kannada', sans-serif;
+    /* CHANGED: Switched to Noto Sans Kannada UI */
+    font-family: 'Noto Sans Kannada UI', sans-serif;
     font-size: 20px;
-    font-weight: 600; /* Semibold */
-    color: rgba(0, 0, 0, 0.2); /* Black with 20% opacity */
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.2);
 }
 
-/* 2. Extreme Right Text (Counter) */
+/* 2. Extreme Right Text */
 .loading-text-right {
     position: absolute;
     right: 32px;
     top: 50%;
-    transform: translateY(-50%);
     z-index: 10;
-
-    /* Typography Settings */
-    font-family: 'Noto Sans Kannada', sans-serif;
+    /* CHANGED: Switched to Noto Sans Kannada UI */
+    font-family: 'Noto Sans Kannada UI', sans-serif;
     font-size: 20px;
-    font-weight: 600; /* Semibold */
+    font-weight: 600;
     color: #000000;
-
     font-variant-numeric: tabular-nums;
 }
 
@@ -119,20 +124,59 @@ body {
     position: absolute;
     bottom: 24px;
     left: 50%;
-    transform: translateX(-50%);
     z-index: 10;
     white-space: nowrap;
-
-    /* Typography Settings */
+    /* Keeping Noto Serif for the main title as it was not requested to change */
     font-family: 'Noto Serif Kannada', serif;
     font-size: 20px;
-    font-weight: 600; /* Semibold */
+    font-weight: 600;
+    color: #000000;
+}
+
+/* --- NEW: DEFINITION TEXT STYLING --- */
+.definition-wrapper {
+    position: absolute;
+    /* Top/Left set by GSAP */
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+
+    /* CHANGED: Align items to the left, not center */
+    align-items: flex-start;
+    text-align: left;
+
+    gap: 16px; /* 16px space between lines */
+    pointer-events: none; /* Allow click through initially */
+}
+
+.def-text {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    /* Base color: 40% Opacity Black (for pronunciation and noun) */
+    color: rgba(0, 0, 0, 0.4);
+    pointer-events: auto; /* Enable cursor interaction */
+    line-height: 1.5;
+}
+
+.def-pronunciation {
+    font-weight: 400;
+}
+
+.def-noun {
+    font-style: italic;
+}
+
+.def-desc {
+    font-weight: 400;
+    max-width: 400px;
+    /* CHANGED: Full opacity black for the meaning text */
     color: #000000;
 }
 
 /* --- EXISTING LOGO STYLES --- */
 
-/* Leather Texture Layer */
 .logo-wrapper::before {
     content: "";
     position: absolute;
@@ -145,7 +189,6 @@ body {
     z-index: 0;
 }
 
-/* Light Reflection Layer */
 .logo-wrapper::after {
     content: "";
     position: absolute;
