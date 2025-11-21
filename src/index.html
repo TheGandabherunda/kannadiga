@@ -185,7 +185,9 @@
             filter: "blur(0px)",
             stagger: 0.1,
             ease: "expo.out",
-            clearProps: "filter"
+            // ADDED 'transform' to clearProps. This removes the inline transform:translate(0,0)
+            // allowing the CSS hover transform to take effect.
+            clearProps: "filter,transform"
         }, "-=0.8");
     }
 
