@@ -126,7 +126,7 @@
             filter: "blur(0px)",
             stagger: 0,
             ease: "expo.inOut",
-            clearProps: "filter" // Ensure blur is removed to prevent rasterization
+            clearProps: "filter"
         })
         // 4. Animate Bottom Text
         .to(kannadaElement, {
@@ -135,72 +135,103 @@
             y: 0,
             filter: "blur(0px)",
             ease: "expo.inOut",
-            clearProps: "filter" // Ensure blur is removed
+            clearProps: "filter"
         }, "-=1.9");
     }
 
     // --- GSAP EXIT ANIMATION & WELCOME SEQUENCE ---
     function runExitAnimation() {
-        const tl = gsap.timeline();
+        const btn = document.querySelector('.enter-button');
+
+        // Ensure button is clean (no transition) before starting animation
+        btn.classList.remove('interactive');
+
+        const tl = gsap.timeline({
+            onComplete: () => {
+                // IMPORTANT: Enable CSS interactions (transition) only AFTER animation is done.
+                btn.classList.add('interactive');
+            }
+        });
 
         const container = document.querySelector('.container');
         const kannadaText = document.querySelector('.bottom-text');
         const leftText = document.querySelector('.loading-text-left');
         const rightText = document.querySelector('.loading-text-right');
 
-        // New Elements
         const welcomeText = document.querySelector('.welcome-text');
         const enterButton = document.querySelector('.enter-button');
         const finalContent = document.querySelector('.final-sequence-content');
 
+        // --- CALCULATE START POSITIONS ---
+        const bottomTextRect = kannadaText.getBoundingClientRect();
+        const welcomeRect = finalContent.getBoundingClientRect();
+
+        // Calculate the vertical difference
+        const fullDistanceY = (bottomTextRect.top + bottomTextRect.height / 2) - (welcomeRect.top + welcomeRect.height / 2);
+
+        const startY = fullDistanceY * 0.05;
+
+        // --- PREPARE WELCOME ELEMENTS ---
+        gsap.set([welcomeText, enterButton], {
+            y: startY,
+            autoAlpha: 0
+        });
+
         // --- DYNAMIC CENTERING CALCULATION ---
-        // To center the entire group (Logo + Gap + Text + Button), we calculate the height
-        // of the content added below the logo and shift the whole container UP by half that amount.
-        const gap = 48; // Defined in CSS margin-top
+        const gap = 48;
         const contentHeight = finalContent.offsetHeight;
         const moveUpDistance = (gap + contentHeight) / 2;
 
         // --- ANIMATION TIMELINE ---
-        tl
-        // Step 1: Fade out ALL loading text
+        tl.add("exitStart")
+
+        // 1. Fade out Loading Text
         .to([leftText, rightText, kannadaText], {
-            duration: 1.5,
+            duration: 1.6,
             y: -50,
             autoAlpha: 0,
             filter: "blur(10px)",
             ease: "expo.inOut"
-        })
-        // Step 2: Move Container UP based on content height to center everything
+        }, "exitStart")
+
+        // 2. Move Container UP
         .to(container, {
-            duration: 1.5,
+            duration: 1.6,
             y: `-=${moveUpDistance}`,
             ease: "expo.inOut"
-        }, "<")
-        // Step 3: Animate Welcome Text & Button IN
-        // Overlap set to -0.8s to appear smoothly while logo is finishing its move
+        }, "exitStart")
+
+        // 3. Move Welcome Text UP (Hidden)
         .to([welcomeText, enterButton], {
-            duration: 2.0,
-            autoAlpha: 1,
+            duration: 1.6,
             y: 0,
+            ease: "expo.inOut",
+            stagger: 0
+        }, "exitStart")
+
+        // 4. Reveal Welcome Text & Button
+        .to([welcomeText, enterButton], {
+            duration: 0.8,
+            autoAlpha: 1,
             filter: "blur(0px)",
-            stagger: 0.1,
-            ease: "expo.out",
-            // ADDED 'transform' to clearProps. This removes the inline transform:translate(0,0)
-            // allowing the CSS hover transform to take effect.
+            ease: "power2.out",
+            stagger: 0,
+            // CRITICAL: Clear 'transform' to allow CSS scale() to take over fully
             clearProps: "filter,transform"
-        }, "-=0.8");
+        }, "exitStart+=0.7");
     }
 
     // --- APP LOGIC ---
     let colorInterval;
-    let lastColorIndex = -1;
+    let lastColorIndex = 0;
 
     function startAppLogic() {
-        startColorCycle();
         startCounter();
     }
 
     function startColorCycle() {
+        if (colorInterval) clearInterval(colorInterval);
+
         const setRandomColor = () => {
             let newIndex;
             do {
@@ -219,12 +250,20 @@
 
     function startCounter() {
         const progress = { val: 0 };
+        let hasStartedColors = false;
+
         gsap.to(progress, {
             val: 100,
             duration: 3,
             ease: "expo.inOut",
             onUpdate: function() {
-                counterEl.textContent = toKannadaNum(Math.floor(progress.val));
+                const currentVal = Math.floor(progress.val);
+                counterEl.textContent = toKannadaNum(currentVal);
+
+                if (!hasStartedColors && currentVal > 0) {
+                    hasStartedColors = true;
+                    startColorCycle();
+                }
             },
             onComplete: function() {
                 stopColorCycle();
