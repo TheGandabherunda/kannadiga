@@ -53,9 +53,7 @@
 </div>
 
 <!-- BOTTOM TEXT -->
-<div class="bottom-text" id="loadingCounter">೦೦
-
-</div>
+<div class="bottom-text" id="loadingCounter">೦೦</div>
 
 <!-- RIGHT TEXT -->
 <div class="loading-text-right">ಕನ್ನಡಿಗ</div>
@@ -222,51 +220,44 @@
     }
 
     // --- APP LOGIC ---
-    let colorInterval;
     let lastColorIndex = 0;
 
     function startAppLogic() {
         startCounter();
     }
 
-    function startColorCycle() {
-        if (colorInterval) clearInterval(colorInterval);
-
-        const setRandomColor = () => {
-            let newIndex;
-            do {
-                newIndex = Math.floor(Math.random() * preloadColors.length);
-            } while (newIndex === lastColorIndex);
-            lastColorIndex = newIndex;
-            logoWrapperEl.style.backgroundColor = preloadColors[newIndex];
-        };
-        setRandomColor();
-        colorInterval = setInterval(setRandomColor, 300);
-    }
-
-    function stopColorCycle() {
-        clearInterval(colorInterval);
+    function changeColorOnce() {
+        let newIndex;
+        do {
+            newIndex = Math.floor(Math.random() * preloadColors.length);
+        } while (newIndex === lastColorIndex);
+        lastColorIndex = newIndex;
+        logoWrapperEl.style.backgroundColor = preloadColors[newIndex];
     }
 
     function startCounter() {
         const progress = { val: 0 };
-        let hasStartedColors = false;
+        let lastIntVal = 0;
 
         gsap.to(progress, {
             val: 100,
-            duration: 3,
+            duration: 6,
             ease: "expo.inOut",
             onUpdate: function() {
                 const currentVal = Math.floor(progress.val);
-                counterEl.textContent = toKannadaNum(currentVal);
 
-                if (!hasStartedColors && currentVal > 0) {
-                    hasStartedColors = true;
-                    startColorCycle();
+                if (currentVal !== lastIntVal) {
+                    counterEl.textContent = toKannadaNum(currentVal);
+
+                    // CHANGED: Trigger color change at 1 OR every 5 (5, 10, 15, etc.)
+                    if (currentVal === 1 || (currentVal > 0 && currentVal % 5 === 0)) {
+                        changeColorOnce();
+                    }
+
+                    lastIntVal = currentVal;
                 }
             },
             onComplete: function() {
-                stopColorCycle();
                 runExitAnimation();
             }
         });
