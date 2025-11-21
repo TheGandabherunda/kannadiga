@@ -23,7 +23,8 @@ let isTextHover = false;
 let currentTextHeight = 0;
 
 // Define text elements that trigger the shape change
-const textSelectors = '.loading-text-left, .loading-text-right, .bottom-text, p, h1, h2, h3, h4, h5, h6, span';
+// REMOVED: .enter-button, button (So cursor stays square on button hover)
+const textSelectors = '.loading-text-left, .loading-text-right, .bottom-text, .welcome-text, p, h1, h2, h3, h4, h5, h6, span';
 
 // Add listeners to all matching elements
 const attachHoverListeners = () => {

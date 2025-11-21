@@ -24,7 +24,9 @@
         .loading-text-left,
         .container,
         .bottom-text,
-        .loading-text-right {
+        .loading-text-right,
+        .welcome-text,
+        .enter-button {
             visibility: hidden;
         }
     </style>
@@ -41,6 +43,12 @@
 <div class="container" id="interaction-container">
     <div class="logo-wrapper" id="logoWrapper">
         <!-- SVG injected here -->
+    </div>
+
+    <!-- NEW: Final Sequence Content (Text + Button) -->
+    <div class="final-sequence-content">
+        <div class="welcome-text">ನಿಮಗೆ<br>ಆತ್ಮೀಯ ಸ್ವಾಗತ.</div>
+        <button class="enter-button">ಪ್ರವೇಶಿಸಿ</button>
     </div>
 </div>
 
@@ -96,6 +104,13 @@
             filter: "blur(10px)"
         });
 
+        // Initialize New Elements as Hidden
+        gsap.set([".welcome-text", ".enter-button"], {
+            autoAlpha: 0,
+            y: 50,
+            filter: "blur(10px)"
+        });
+
         // 2. Initialize Shared Start State
         gsap.set(topRowElements, {
             autoAlpha: 0,
@@ -124,7 +139,7 @@
         }, "-=1.9");
     }
 
-    // --- GSAP EXIT ANIMATION ---
+    // --- GSAP EXIT ANIMATION & WELCOME SEQUENCE ---
     function runExitAnimation() {
         const tl = gsap.timeline();
 
@@ -133,16 +148,21 @@
         const leftText = document.querySelector('.loading-text-left');
         const rightText = document.querySelector('.loading-text-right');
 
-        // --- DYNAMIC CALCULATIONS ---
-        const containerRect = container.getBoundingClientRect();
+        // New Elements
+        const welcomeText = document.querySelector('.welcome-text');
+        const enterButton = document.querySelector('.enter-button');
+        const finalContent = document.querySelector('.final-sequence-content');
 
-        // 1. Calculate Vertical Move for Logo
-        const targetLogoTop = 140;
-        const logoMoveY = targetLogoTop - containerRect.top;
+        // --- DYNAMIC CENTERING CALCULATION ---
+        // To center the entire group (Logo + Gap + Text + Button), we calculate the height
+        // of the content added below the logo and shift the whole container UP by half that amount.
+        const gap = 48; // Defined in CSS margin-top
+        const contentHeight = finalContent.offsetHeight;
+        const moveUpDistance = (gap + contentHeight) / 2;
 
         // --- ANIMATION TIMELINE ---
         tl
-        // Step 1: Fade out ALL text (Left, Right, and Bottom)
+        // Step 1: Fade out ALL loading text
         .to([leftText, rightText, kannadaText], {
             duration: 1.5,
             y: -50,
@@ -150,12 +170,23 @@
             filter: "blur(10px)",
             ease: "expo.inOut"
         })
-        // Step 2: Move Logo UP
+        // Step 2: Move Container UP based on content height to center everything
         .to(container, {
             duration: 1.5,
-            y: "+=" + logoMoveY,
+            y: `-=${moveUpDistance}`,
             ease: "expo.inOut"
-        }, "<");
+        }, "<")
+        // Step 3: Animate Welcome Text & Button IN
+        // Overlap set to -0.8s to appear smoothly while logo is finishing its move
+        .to([welcomeText, enterButton], {
+            duration: 2.0,
+            autoAlpha: 1,
+            y: 0,
+            filter: "blur(0px)",
+            stagger: 0.1,
+            ease: "expo.out",
+            clearProps: "filter"
+        }, "-=0.8");
     }
 
     // --- APP LOGIC ---
