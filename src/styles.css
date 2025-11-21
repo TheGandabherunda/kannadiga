@@ -74,6 +74,8 @@ body {
     justify-content: center;
     align-items: center;
     pointer-events: none;
+    /* Ensure consistent rendering for the centered container */
+    backface-visibility: hidden;
 }
 
 .logo-wrapper {
@@ -98,11 +100,10 @@ body {
     left: 32px;
     top: 50%;
     z-index: 10;
-    /* CHANGED: Switched to Noto Sans Kannada UI */
     font-family: 'Noto Sans Kannada UI', sans-serif;
     font-size: 20px;
     font-weight: 600;
-    color: #000000;
+    color: rgba(0, 0, 0, 0.3);
 }
 
 /* 2. Extreme Right Text */
@@ -111,11 +112,10 @@ body {
     right: 32px;
     top: 50%;
     z-index: 10;
-    /* CHANGED: Switched to Noto Sans Kannada UI */
     font-family: 'Noto Sans Kannada UI', sans-serif;
     font-size: 20px;
     font-weight: 600;
-    color: #000000;
+    color: rgba(0, 0, 0, 0.3);
     font-variant-numeric: tabular-nums;
 }
 
@@ -126,52 +126,10 @@ body {
     left: 50%;
     z-index: 10;
     white-space: nowrap;
-    /* Keeping Noto Serif for the main title as it was not requested to change */
-    font-family: 'Noto Serif Kannada', serif;
-    font-size: 20px;
+    /* font-family: 'Noto Serif Kannada', serif; */
+    font-family: 'Noto Sans Kannada UI', sans-serif;
+    font-size: 24px;
     font-weight: 600;
-    color: rgba(0, 0, 0, 0.2);
-}
-
-/* --- NEW: DEFINITION TEXT STYLING --- */
-.definition-wrapper {
-    position: absolute;
-    /* Top/Left set by GSAP */
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-
-    /* CHANGED: Align items to the left, not center */
-    align-items: flex-start;
-    text-align: left;
-
-    gap: 16px; /* 16px space between lines */
-    pointer-events: none; /* Allow click through initially */
-}
-
-.def-text {
-    margin: 0;
-    padding: 0;
-    font-family: 'Inter', sans-serif;
-    font-size: 16px;
-    /* Base color: 40% Opacity Black (for pronunciation and noun) */
-    color: rgba(0, 0, 0, 0.4);
-    pointer-events: auto; /* Enable cursor interaction */
-    line-height: 1.5;
-}
-
-.def-pronunciation {
-    font-weight: 400;
-}
-
-.def-noun {
-    font-style: italic;
-}
-
-.def-desc {
-    font-weight: 400;
-    max-width: 400px;
-    /* CHANGED: Full opacity black for the meaning text */
     color: #000000;
 }
 
@@ -182,7 +140,6 @@ body {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
     background-image: url('assets/leather-macro-shot.jpg');
-    /* Scaled appropriately for 80px width (approx 1.11x) */
     background-size: 166px auto;
     opacity: 0.4;
     mix-blend-mode: luminosity;
@@ -194,7 +151,6 @@ body {
     content: "";
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    /* Scaled radius appropriately for 80px width */
     background: radial-gradient(
         circle 90px at var(--light-x) var(--light-y),
         rgba(255, 255, 255, 0.4) 0%,
@@ -210,10 +166,15 @@ body {
 svg {
     position: relative;
     z-index: 2;
-    /* CHANGED: Width updated to 80px */
     width: 80px;
     height: auto;
     overflow: visible;
     pointer-events: none;
     display: block;
+
+    /* FIX: Reset to auto for best browser-specific smoothing */
+    shape-rendering: auto;
+
+    /* FIX: Force hardware layer promotion to prevent sub-pixel jitter/aliasing */
+    transform: translateZ(0);
 }

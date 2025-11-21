@@ -23,15 +23,11 @@ let isTextHover = false;
 let currentTextHeight = 0;
 
 // Define text elements that trigger the shape change
-// Added '.def-text' to the selectors
-const textSelectors = '.loading-text-left, .loading-text-right, .bottom-text, .def-text, p, h1, h2, h3, h4, h5, h6, span';
+const textSelectors = '.loading-text-left, .loading-text-right, .bottom-text, p, h1, h2, h3, h4, h5, h6, span';
 
 // Add listeners to all matching elements
-// Use event delegation or re-query if elements are dynamic,
-// but since these exist in DOM (just hidden), simple querySelectorAll works.
 const attachHoverListeners = () => {
     document.querySelectorAll(textSelectors).forEach(el => {
-        // Prevent duplicate listeners if run multiple times
         if(el.dataset.cursorAttached) return;
         el.dataset.cursorAttached = "true";
 
@@ -44,7 +40,6 @@ const attachHoverListeners = () => {
             currentTextHeight = fontSize;
 
             // Smooth transition to Text Cursor (Bar)
-            // Width 2px, Height = Font Size
             gsap.to(cursor, {
                 width: 2,
                 height: fontSize,
@@ -57,7 +52,6 @@ const attachHoverListeners = () => {
             isTextHover = false;
 
             // Smooth transition back to Default Cursor (Square)
-            // 14x14
             gsap.to(cursor, {
                 width: 14,
                 height: 14,
@@ -74,14 +68,12 @@ attachHoverListeners();
 // --- 3. CLICK INTERACTION ---
 window.addEventListener('mousedown', () => {
     if (isTextHover) {
-        // If on text: Reduce height by 2px
         gsap.to(cursor, {
             height: currentTextHeight - 2,
             duration: 0.15,
             ease: "power2.out"
         });
     } else {
-        // If default: Shrink to 12x12
         gsap.to(cursor, {
             width: 12,
             height: 12,
@@ -93,14 +85,12 @@ window.addEventListener('mousedown', () => {
 
 window.addEventListener('mouseup', () => {
     if (isTextHover) {
-        // If on text: Restore to font size
         gsap.to(cursor, {
             height: currentTextHeight,
             duration: 0.15,
             ease: "power2.out"
         });
     } else {
-        // If default: Restore to 14x14
         gsap.to(cursor, {
             width: 14,
             height: 14,
@@ -123,7 +113,6 @@ window.initSVGLights = function() {
     const specularElement = document.getElementById('specular-element');
 
     // Original viewBox dimensions
-    // These remain constant as they describe the SVG's internal coordinate system
     const vbWidth = 72;
     const vbHeight = 97;
 
@@ -132,7 +121,7 @@ window.initSVGLights = function() {
         // Guard clause
         if (!lightSource || !diffuseSource) return;
 
-        // Get updated rect (This will automatically account for the new 80px width)
+        // Get updated rect
         const logoRect = logoWrapper.getBoundingClientRect();
 
         // 1. Calculate Center of the Logo

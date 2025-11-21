@@ -8,7 +8,6 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- CHANGED: Removed Noto Sans Kannada (now local), Kept Inter and Noto Serif Kannada -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;1,400&family=Noto+Serif+Kannada:wght@600&display=swap" rel="stylesheet">
 
     <!-- Tailwind CSS -->
@@ -25,8 +24,7 @@
         .loading-text-left,
         .container,
         .bottom-text,
-        .loading-text-right,
-        .definition-wrapper {
+        .loading-text-right {
             visibility: hidden;
         }
     </style>
@@ -37,7 +35,7 @@
 <div id="custom-cursor"></div>
 
 <!-- LEFT TEXT -->
-<div class="loading-text-left">ಕನ್ನಡಿಗ</div>
+<div class="loading-text-left">ಸಿರಿಗನ್ನಡಂ ಗೆಲ್ಗೆ &nbsp; • &nbsp; ಸಿರಿಗನ್ನಡಂ ಬಾಳ್ಗೆ</div>
 
 <!-- CENTER: Logo Container -->
 <div class="container" id="interaction-container">
@@ -47,17 +45,12 @@
 </div>
 
 <!-- BOTTOM TEXT -->
-<div class="bottom-text">ಸಿರಿಗನ್ನಡಂ ಗೆಲ್ಗೆ . ಸಿರಿಗನ್ನಡಂ ಬಾಳ್ಗೆ</div>
+<div class="bottom-text" id="loadingCounter">೦೦
+
+</div>
 
 <!-- RIGHT TEXT -->
-<div class="loading-text-right" id="loadingCounter">೦೦</div>
-
-<!-- NEW: Definition Text Wrapper -->
-<div class="definition-wrapper">
-    <p class="def-text def-pronunciation">♪ kannaḍiga</p>
-    <p class="def-text def-noun">noun</p>
-    <p class="def-text def-desc">a man whose mother tongue is Kannaḍa;<br>a man belonging to Karnāṭaka.</p>
-</div>
+<div class="loading-text-right">ಕನ್ನಡಿಗ</div>
 
 <script>
     // --- CONFIGURATION ---
@@ -117,7 +110,8 @@
             y: 0,
             filter: "blur(0px)",
             stagger: 0,
-            ease: "expo.inOut"
+            ease: "expo.inOut",
+            clearProps: "filter" // Ensure blur is removed to prevent rasterization
         })
         // 4. Animate Bottom Text
         .to(kannadaElement, {
@@ -125,7 +119,8 @@
             autoAlpha: 1,
             y: 0,
             filter: "blur(0px)",
-            ease: "expo.inOut"
+            ease: "expo.inOut",
+            clearProps: "filter" // Ensure blur is removed
         }, "-=1.9");
     }
 
@@ -137,62 +132,18 @@
         const kannadaText = document.querySelector('.bottom-text');
         const leftText = document.querySelector('.loading-text-left');
         const rightText = document.querySelector('.loading-text-right');
-        const defWrapper = document.querySelector('.definition-wrapper');
-        const defLines = document.querySelectorAll('.def-text');
 
         // --- DYNAMIC CALCULATIONS ---
         const containerRect = container.getBoundingClientRect();
-        const textRect = kannadaText.getBoundingClientRect();
 
-        // 1. Calculate Visual Alignment
-        // We need to know how wide the text WILL be at 32px to align definitions to its start.
-        const currentFontSize = window.getComputedStyle(kannadaText).fontSize;
-        kannadaText.style.fontSize = "32px"; // Temporarily set to final size
-        const titleWidthAt32 = kannadaText.offsetWidth;
-        kannadaText.style.fontSize = currentFontSize; // Reset immediately
-
-        // Calculate left position: Center of screen - half of title width
-        const screenCenter = window.innerWidth / 2;
-        const titleLeftStart = screenCenter - (titleWidthAt32 / 2);
-
-        // Fix Anchor for Text Growth
-        gsap.set(kannadaText, {
-            top: textRect.top,
-            bottom: "auto",
-            y: 0
-        });
-
-        // 2. Calculate Vertical Moves
+        // 1. Calculate Vertical Move for Logo
         const targetLogoTop = 140;
         const logoMoveY = targetLogoTop - containerRect.top;
 
-        const targetTextTop = targetLogoTop + containerRect.height + 16;
-        const textMoveY = targetTextTop - textRect.top;
-
-        // 3. Position Definition Wrapper
-        // We place it vertically below the final title position.
-        // We place it horizontally at the EXACT start of the title.
-        const titleHeightApprox = 48;
-        const defStartY = targetTextTop + titleHeightApprox + 16;
-
-        gsap.set(defWrapper, {
-            top: defStartY,
-            left: titleLeftStart, // Align specifically to the left edge
-            xPercent: 0, // Remove centering transform so 'left' is absolute
-            autoAlpha: 1,
-            visibility: "visible"
-        });
-
-        gsap.set(defLines, {
-            autoAlpha: 0,
-            y: 20,
-            filter: "blur(10px)"
-        });
-
         // --- ANIMATION TIMELINE ---
         tl
-        // Step 1: Fade out side texts
-        .to([leftText, rightText], {
+        // Step 1: Fade out ALL text (Left, Right, and Bottom)
+        .to([leftText, rightText, kannadaText], {
             duration: 1.5,
             y: -50,
             autoAlpha: 0,
@@ -204,23 +155,7 @@
             duration: 1.5,
             y: "+=" + logoMoveY,
             ease: "expo.inOut"
-        }, "<")
-        // Step 3: Move Title UP & Scale
-        .to(kannadaText, {
-            duration: 1.5,
-            y: "+=" + textMoveY,
-            fontSize: "32px",
-            ease: "expo.inOut"
-        }, "<")
-        // Step 4: Animate Definitions IN
-        .to(defLines, {
-            duration: 0.8, // Faster appear
-            autoAlpha: 1,
-            y: 0,
-            filter: "blur(0px)",
-            stagger: 0.1, // Faster stagger
-            ease: "expo.out"
-        }, "-=0.5");
+        }, "<");
     }
 
     // --- APP LOGIC ---
