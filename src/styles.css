@@ -102,7 +102,7 @@ body {
     font-family: 'Noto Sans Kannada UI', sans-serif;
     font-size: 20px;
     font-weight: 600;
-    color: rgba(0, 0, 0, 0.2);
+    color: #000000;
 }
 
 /* 2. Extreme Right Text */
@@ -120,7 +120,7 @@ body {
 }
 
 /* 3. Bottom Text (kannada) */
-.kannada-text {
+.bottom-text {
     position: absolute;
     bottom: 24px;
     left: 50%;
@@ -130,7 +130,7 @@ body {
     font-family: 'Noto Serif Kannada', serif;
     font-size: 20px;
     font-weight: 600;
-    color: #000000;
+    color: rgba(0, 0, 0, 0.2);
 }
 
 /* --- NEW: DEFINITION TEXT STYLING --- */

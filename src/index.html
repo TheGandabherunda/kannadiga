@@ -24,7 +24,7 @@
     <style>
         .loading-text-left,
         .container,
-        .kannada-text,
+        .bottom-text,
         .loading-text-right,
         .definition-wrapper {
             visibility: hidden;
@@ -37,7 +37,7 @@
 <div id="custom-cursor"></div>
 
 <!-- LEFT TEXT -->
-<div class="loading-text-left">ಸಿರಿಗನ್ನಡಂ ಗೆಲ್ಗೆ . ಸಿರಿಗನ್ನಡಂ ಬಾಳ್ಗೆ</div>
+<div class="loading-text-left">ಕನ್ನಡಿಗ</div>
 
 <!-- CENTER: Logo Container -->
 <div class="container" id="interaction-container">
@@ -47,7 +47,7 @@
 </div>
 
 <!-- BOTTOM TEXT -->
-<div class="kannada-text">ಕನ್ನಡಿಗ</div>
+<div class="bottom-text">ಸಿರಿಗನ್ನಡಂ ಗೆಲ್ಗೆ . ಸಿರಿಗನ್ನಡಂ ಬಾಳ್ಗೆ</div>
 
 <!-- RIGHT TEXT -->
 <div class="loading-text-right" id="loadingCounter">೦೦</div>
@@ -84,7 +84,7 @@
             '.container',
             '.loading-text-right'
         ];
-        const kannadaElement = '.kannada-text';
+        const kannadaElement = '.bottom-text';
 
         // 1. Strict Initialization for Centering
         gsap.set(".container", {
@@ -134,7 +134,7 @@
         const tl = gsap.timeline();
 
         const container = document.querySelector('.container');
-        const kannadaText = document.querySelector('.kannada-text');
+        const kannadaText = document.querySelector('.bottom-text');
         const leftText = document.querySelector('.loading-text-left');
         const rightText = document.querySelector('.loading-text-right');
         const defWrapper = document.querySelector('.definition-wrapper');
