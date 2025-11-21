@@ -139,7 +139,7 @@ body {
     top: 100%;
     left: 50%;
     transform: translateX(-50%);
-    margin-top: 48px;
+    margin-top: 28px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -153,10 +153,25 @@ body {
     font-family: 'Noto Serif Kannada', serif;
     font-size: 48px;
     font-weight: 600;
-    color: #000000;
+
+    /* UPDATED: Gold Texture Applied to Text */
+    color: transparent;
+    background-image: url('assets/gold-texture-wallpaper.jpg');
+    background-size: cover;
+    background-position: center;
+    background-clip: text;
+    -webkit-background-clip: text;
+
     line-height: 125.5%;
     white-space: pre-line;
-    margin-bottom: 24px;
+    margin-bottom: 10px;
+
+    /* FIX: Padding added to extend the background painting area
+       so top ascenders (like in 'ನಿ') don't get cropped */
+    padding-top: 20px;
+    padding-bottom: 10px;
+    /* Pull back slightly to maintain relative position */
+    margin-top: -10px;
 }
 
 /* --- BUTTON STYLES --- */
