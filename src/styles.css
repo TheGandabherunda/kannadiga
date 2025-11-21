@@ -154,23 +154,17 @@ body {
     font-size: 48px;
     font-weight: 600;
 
-    /* UPDATED: Gold Texture Applied to Text */
-    color: transparent;
-    background-image: url('assets/gold-texture-wallpaper.jpg');
-    background-size: cover;
-    background-position: center;
-    background-clip: text;
-    -webkit-background-clip: text;
+    /* CHANGED: Removed texture, set to solid black */
+    color: rgba(0, 0, 0, 1.0);
+    /* background-image properties removed */
 
     line-height: 125.5%;
     white-space: pre-line;
     margin-bottom: 10px;
 
-    /* FIX: Padding added to extend the background painting area
-       so top ascenders (like in 'ನಿ') don't get cropped */
+    /* Retain padding for safe layout spacing */
     padding-top: 20px;
     padding-bottom: 10px;
-    /* Pull back slightly to maintain relative position */
     margin-top: -10px;
 }
 
