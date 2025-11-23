@@ -266,8 +266,6 @@ function enterSite() {
     btn.style.pointerEvents = 'none';
     btn.classList.remove('interactive');
 
-    const containerCurrentY = gsap.getProperty(".container", "y");
-
     if (wreathAnim) {
         wreathAnim.setSpeed(3.0);
         wreathAnim.setDirection(-1);
@@ -275,26 +273,38 @@ function enterSite() {
     }
 
     const tl = gsap.timeline();
+    // UNIFIED DURATION & EASING FOR PERFECT SYNC
     const animDuration = 0.8;
-    const animEase = "power3.inOut";
+    // Using expo.out for sharper, more immediate movement start
+    const animEase = "expo.out";
 
     // TRIGGER LABEL: Everything happens at "syncStart"
+    tl.add("syncStart");
 
-    // 1. SWITCH ALIGNMENT & TEXT SWAP (Instant)
-    // Instantaneous changes before the visual tween starts
+    // 1. SWITCH ALIGNMENT & TEXT SWAP (Instant at Start)
     tl.call(() => {
         welcomeText.textContent = "ಕನ್ನಡಿಗ";
     }, null, "syncStart");
 
-    // 2. Button Exit: Blur + Fade
+    // 2. Button Exit: Blur + Fade + MOVE UP
     tl.to(btn, {
-        duration: 0.5,
+        duration: animDuration,
         autoAlpha: 0,
+        y: -30,
         filter: "blur(10px)",
-        ease: "power2.out"
+        ease: animEase
     }, "syncStart");
 
-    // 3. Button Layout Collapse
+    // 3. Wreath Exit: Fade + MOVE UP
+    tl.to("#wreath-animation", {
+        duration: animDuration,
+        autoAlpha: 0,
+        y: -30,
+        filter: "blur(10px)",
+        ease: animEase
+    }, "syncStart");
+
+    // 4. Button Layout Collapse
     tl.to(btn, {
         height: 0,
         margin: 0,
@@ -304,42 +314,34 @@ function enterSite() {
         ease: animEase
     }, "syncStart");
 
-    // 4. Wreath Exit
-    tl.to("#wreath-animation", {
-        duration: 0.5,
-        autoAlpha: 0,
-        filter: "blur(10px)",
-        ease: "power2.out"
-    }, "syncStart");
-
-    // 5. Text Morph - SYNCED
+    // 5. Text Morph (Size & Position changes)
     tl.to(welcomeText, {
         duration: animDuration,
         fontSize: "32px",
         lineHeight: "1.6",
-        marginBottom: "0px", // Margin handled by def-group padding
+        marginBottom: "0px",
         padding: "0px",
         marginTop: "0px",
         ease: animEase
     }, "syncStart");
 
-    // 6. Container Move - SYNCED
+    // 6. Container Move (Resets to Center - Moves Logo/Text down)
     tl.to(".container", {
         duration: animDuration,
         y: 0,
         ease: animEase
     }, "syncStart");
 
-    // 7. Final Content Position Adjustment - SYNCED
+    // 7. Final Content Position Adjustment
     tl.to(finalContent, {
         marginTop: "20px",
         duration: animDuration,
         ease: animEase
     }, "syncStart");
 
-    // 8. Reveal Dictionary Details - DELAYED
-    // Starts exactly when the text morph/move (animDuration = 0.8) completes.
-    tl.set(".def-group", { display: "flex", autoAlpha: 1 }, "syncStart+=0.8")
+    // 8. Reveal Dictionary Details (IMMEDIATE START - No Delay)
+    // Changed from "syncStart+=" + animDuration to "syncStart"
+    tl.set(".def-group", { display: "flex", autoAlpha: 1 }, "syncStart")
       .fromTo([".def-phonetic", ".def-noun", ".def-desc"],
         { autoAlpha: 0, y: 20, filter: "blur(5px)" },
         {
@@ -347,9 +349,9 @@ function enterSite() {
             autoAlpha: 1,
             y: 0,
             filter: "blur(0px)",
-            stagger: 0.2, // Distinct line-by-line effect
-            ease: "power2.out"
-        }, "syncStart+=0.8");
+            stagger: 0.1, // Reduced stagger slightly for snap
+            ease: "expo.out" // Matched easing
+        }, "syncStart");
 }
 
 function startAppLogic() {
