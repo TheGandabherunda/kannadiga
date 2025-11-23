@@ -30,7 +30,8 @@
         .loading-text-right,
         .welcome-text,
         .enter-button,
-        #wreath-animation {
+        #wreath-animation,
+        #home-screen {
             visibility: hidden;
         }
     </style>
@@ -39,6 +40,11 @@
 
 <!-- Custom Cursor Element -->
 <div id="custom-cursor"></div>
+
+<!-- HOME SCREEN LAYER (New) -->
+<div id="home-screen">
+    <!-- Future Home Screen Content goes here -->
+</div>
 
 <!-- LEFT TEXT -->
 <div class="loading-text-left">ಸಿರಿಗನ್ನಡಂ ಗೆಲ್ಗೆ &nbsp; • &nbsp; ಸಿರಿಗನ್ನಡಂ ಬಾಳ್ಗೆ</div>
@@ -55,7 +61,7 @@
     <!-- NEW: Final Sequence Content (Text + Button) -->
     <div class="final-sequence-content">
         <div class="welcome-text">ನಿಮಗೆ<br>ಆತ್ಮೀಯ ಸ್ವಾಗತ.</div>
-        <button class="enter-button">ಪ್ರವೇಶಿಸಿ</button>
+        <button class="enter-button" onclick="enterSite()">ಪ್ರವೇಶಿಸಿ</button>
     </div>
 </div>
 
@@ -131,6 +137,11 @@
 
         // Initialize Wreath as Hidden
         gsap.set("#wreath-animation", {
+            autoAlpha: 0
+        });
+
+        // Initialize Home Screen as Hidden
+        gsap.set("#home-screen", {
             autoAlpha: 0
         });
 
@@ -265,6 +276,62 @@
             autoAlpha: 1,
             ease: "power2.out"
         }, "exitStart+=0.4");
+    }
+
+    // --- HOME SCREEN TRANSITION ---
+    function enterSite() {
+        const btn = document.querySelector('.enter-button');
+        // Disable button to prevent double clicks
+        btn.style.pointerEvents = 'none';
+        btn.classList.remove('interactive'); // Stop hover effects immediately
+
+        // --- CAPTURE CURRENT Y POSITION ---
+        // We need this to counter-animate the wreath
+        const containerCurrentY = gsap.getProperty(".container", "y");
+
+        // --- TRIGGER REVERSE ANIMATION ---
+        if (wreathAnim) {
+            // Speed up significantly (3x) to match the text fade duration.
+            // This ensures the wreath "unwinds" fully while the text is disappearing.
+            wreathAnim.setSpeed(3.0);
+            wreathAnim.setDirection(-1); // Reverse direction
+            wreathAnim.play();           // Play reverse
+        }
+
+        const tl = gsap.timeline();
+
+        // 1. Fade out Welcome Text & Button (WITH BLUR)
+        tl.to(".final-sequence-content", {
+            duration: 1.6,
+            y: -50,
+            autoAlpha: 0,
+            filter: "blur(10px)", // Restore Blur
+            ease: "expo.inOut"
+        }, "homeEnter")
+
+        // 2. Move Logo Container Back to True Center
+        .to(".container", {
+            duration: 1.6,
+            y: 0,
+            ease: "expo.inOut"
+        }, "homeEnter")
+
+        // 3. Counter-Animate Wreath + FADE OUT + BLUR
+        // Syncs perfectly with text disappearance
+        .to("#wreath-animation", {
+            duration: 1.6,
+            y: containerCurrentY,
+            autoAlpha: 0,         // Fade out together with text
+            filter: "blur(5px)",  // Add slight blur to match text style
+            ease: "expo.inOut"
+        }, "homeEnter")
+
+        // 4. Reveal Home Screen (if any content exists)
+        .to("#home-screen", {
+            duration: 1,
+            autoAlpha: 1,
+            ease: "power2.out"
+        }, "homeEnter+=0.5");
     }
 
     // --- APP LOGIC ---
