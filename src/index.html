@@ -31,7 +31,8 @@
         .welcome-text,
         .enter-button,
         #wreath-animation,
-        #home-screen {
+        #home-screen,
+        .def-group {
             visibility: hidden;
         }
     </style>
@@ -41,10 +42,8 @@
 <!-- Custom Cursor Element -->
 <div id="custom-cursor"></div>
 
-<!-- HOME SCREEN LAYER (New) -->
-<div id="home-screen">
-    <!-- Future Home Screen Content goes here -->
-</div>
+<!-- HOME SCREEN LAYER -->
+<div id="home-screen"></div>
 
 <!-- LEFT TEXT -->
 <div class="loading-text-left">ಸಿರಿಗನ್ನಡಂ ಗೆಲ್ಗೆ &nbsp; • &nbsp; ಸಿರಿಗನ್ನಡಂ ಬಾಳ್ಗೆ</div>
@@ -55,12 +54,26 @@
     <div id="wreath-animation"></div>
 
     <div class="logo-wrapper" id="logoWrapper">
-        <!-- SVG injected here -->
+        <!-- SVG injected here by JS -->
     </div>
 
-    <!-- NEW: Final Sequence Content (Text + Button) -->
+    <!-- MAIN SEQUENCE CONTENT -->
     <div class="final-sequence-content">
-        <div class="welcome-text">ನಿಮಗೆ<br>ಆತ್ಮೀಯ ಸ್ವಾಗತ.</div>
+        <!-- Text Wrapper: Shrinks to fit Title, used for alignment -->
+        <div class="text-anchor">
+            <!-- This text transforms into the Title -->
+            <div class="welcome-text">ನಿಮಗೆ<br>ಆತ್ಮೀಯ ಸ್ವಾಗತ.</div>
+
+            <!-- Dictionary Elements (Absolute positioned relative to anchor) -->
+            <div class="def-group">
+                <div class="def-phonetic">♪ kannaḍiga</div>
+                <div class="def-noun">noun</div>
+                <div class="def-desc">a man whose mother tongue is Kannaḍa;</div>
+                <div class="def-desc">a man belonging to Karnāṭaka.</div>
+            </div>
+        </div>
+
+        <!-- Button (Disappears on click) -->
         <button class="enter-button" onclick="enterSite()">ಪ್ರವೇಶಿಸಿ</button>
     </div>
 </div>
@@ -71,328 +84,7 @@
 <!-- RIGHT TEXT -->
 <div class="loading-text-right">ಕನ್ನಡಿಗ</div>
 
-<script>
-    // --- CONFIGURATION ---
-    const preloadColors = ['#FF0000', '#FFCF03', '#00C907', '#9A00EB', '#F2059F'];
-
-    // Elements
-    const logoWrapperEl = document.getElementById('logoWrapper');
-    const counterEl = document.getElementById('loadingCounter');
-    const kannadaDigits = ['೦','೧','೨','೩','೪','೫','೬','೭','೮','೯'];
-
-    // --- LOTTIE INITIALIZATION ---
-    let wreathAnim = null;
-
-    function initLottie() {
-        wreathAnim = lottie.loadAnimation({
-            container: document.getElementById('wreath-animation'),
-            renderer: 'svg', // Must be SVG for CSS overrides to work
-            loop: false,
-            autoplay: false,
-            path: 'assets/animation.json'
-        });
-    }
-
-    function toKannadaNum(num) {
-        const numStr = num.toString().padStart(2, '0');
-        return numStr.split('').map(digit => kannadaDigits[parseInt(digit)]).join('');
-    }
-
-    // --- GSAP ENTRANCE ANIMATION ---
-    function runIntroAnimation() {
-        const tl = gsap.timeline({
-            onComplete: startAppLogic
-        });
-
-        const topRowElements = [
-            '.loading-text-left',
-            '.container',
-            '.loading-text-right'
-        ];
-        const kannadaElement = '.bottom-text';
-
-        // 1. Strict Initialization for Centering
-        gsap.set(".container", {
-            xPercent: -50,
-            yPercent: -50
-        });
-
-        gsap.set([".loading-text-left", ".loading-text-right"], {
-            yPercent: -50
-        });
-
-        gsap.set(kannadaElement, {
-            xPercent: -50,
-            autoAlpha: 0,
-            y: 50,
-            filter: "blur(10px)"
-        });
-
-        // Initialize New Elements as Hidden
-        gsap.set([".welcome-text", ".enter-button"], {
-            autoAlpha: 0,
-            y: 50,
-            filter: "blur(10px)"
-        });
-
-        // Initialize Wreath as Hidden
-        gsap.set("#wreath-animation", {
-            autoAlpha: 0
-        });
-
-        // Initialize Home Screen as Hidden
-        gsap.set("#home-screen", {
-            autoAlpha: 0
-        });
-
-        // 2. Initialize Shared Start State
-        gsap.set(topRowElements, {
-            autoAlpha: 0,
-            y: 50,
-            filter: "blur(10px)"
-        });
-
-        // 3. Animate Top Row
-        tl.to(topRowElements, {
-            duration: 2.0,
-            autoAlpha: 1,
-            y: 0,
-            filter: "blur(0px)",
-            stagger: 0,
-            ease: "expo.inOut",
-            clearProps: "filter"
-        })
-        // 4. Animate Bottom Text
-        .to(kannadaElement, {
-            duration: 2.0,
-            autoAlpha: 1,
-            y: 0,
-            filter: "blur(0px)",
-            ease: "expo.inOut",
-            clearProps: "filter"
-        }, "-=1.9");
-    }
-
-    // --- GSAP EXIT ANIMATION & WELCOME SEQUENCE ---
-    function runExitAnimation() {
-        const btn = document.querySelector('.enter-button');
-
-        // Ensure button is clean (no transition) before starting animation
-        btn.classList.remove('interactive');
-
-        const tl = gsap.timeline({
-            onComplete: () => {
-                // IMPORTANT: Enable CSS interactions (transition) only AFTER animation is done.
-                btn.classList.add('interactive');
-            }
-        });
-
-        const container = document.querySelector('.container');
-        const kannadaText = document.querySelector('.bottom-text');
-        const leftText = document.querySelector('.loading-text-left');
-        const rightText = document.querySelector('.loading-text-right');
-
-        const welcomeText = document.querySelector('.welcome-text');
-        const enterButton = document.querySelector('.enter-button');
-        const finalContent = document.querySelector('.final-sequence-content');
-
-        // --- CALCULATE START POSITIONS ---
-        const bottomTextRect = kannadaText.getBoundingClientRect();
-        const welcomeRect = finalContent.getBoundingClientRect();
-
-        // Calculate the vertical difference
-        const fullDistanceY = (bottomTextRect.top + bottomTextRect.height / 2) - (welcomeRect.top + welcomeRect.height / 2);
-
-        const startY = fullDistanceY * 0.05;
-
-        // --- PREPARE WELCOME ELEMENTS ---
-        gsap.set([welcomeText, enterButton], {
-            y: startY,
-            autoAlpha: 0
-        });
-
-        // --- DYNAMIC CENTERING CALCULATION ---
-        const gap = 28;
-        const contentHeight = finalContent.offsetHeight;
-        const moveUpDistance = (gap + contentHeight) / 2;
-
-        // --- GET FINAL COLOR & COLOR WREATH ---
-        const finalColor = preloadColors[lastColorIndex];
-
-        // IMPORTANT: Apply final color to Lottie Paths
-        // We use GSAP to set the fill/stroke of the SVG paths generated by Lottie
-        gsap.set("#wreath-animation path", {
-            fill: finalColor,
-            stroke: finalColor,
-            opacity: 1.0
-        });
-
-        // --- ANIMATION TIMELINE ---
-        tl.add("exitStart")
-
-        // 1. Fade out Loading Text
-        .to([leftText, rightText, kannadaText], {
-            duration: 1.6,
-            y: -50,
-            autoAlpha: 0,
-            filter: "blur(10px)",
-            ease: "expo.inOut"
-        }, "exitStart")
-
-        // 2. Move Container UP
-        .to(container, {
-            duration: 1.6,
-            y: `-=${moveUpDistance}`,
-            ease: "expo.inOut"
-        }, "exitStart")
-
-        // 3. Move Welcome Text UP (Hidden)
-        .to([welcomeText, enterButton], {
-            duration: 1.6,
-            y: 0,
-            ease: "expo.inOut",
-            stagger: 0
-        }, "exitStart")
-
-        // 4. Reveal Welcome Text & Button
-        .to([welcomeText, enterButton], {
-            duration: 0.8,
-            autoAlpha: 1,
-            filter: "blur(0px)",
-            ease: "power2.out",
-            stagger: 0,
-            // CRITICAL: Clear 'transform' to allow CSS scale() to take over fully
-            clearProps: "filter,transform"
-        }, "exitStart+=0.7")
-
-        // 5. Trigger Wreath Animation
-        .call(() => {
-            if (wreathAnim) {
-                wreathAnim.play();
-            }
-        }, null, "exitStart+=0.4")
-        .to("#wreath-animation", {
-            duration: 1.0,
-            autoAlpha: 1,
-            ease: "power2.out"
-        }, "exitStart+=0.4");
-    }
-
-    // --- HOME SCREEN TRANSITION ---
-    function enterSite() {
-        const btn = document.querySelector('.enter-button');
-        // Disable button to prevent double clicks
-        btn.style.pointerEvents = 'none';
-        btn.classList.remove('interactive'); // Stop hover effects immediately
-
-        // --- CAPTURE CURRENT Y POSITION ---
-        // We need this to counter-animate the wreath
-        const containerCurrentY = gsap.getProperty(".container", "y");
-
-        // --- TRIGGER REVERSE ANIMATION ---
-        if (wreathAnim) {
-            // Speed up significantly (3x) to match the text fade duration.
-            // This ensures the wreath "unwinds" fully while the text is disappearing.
-            wreathAnim.setSpeed(3.0);
-            wreathAnim.setDirection(-1); // Reverse direction
-            wreathAnim.play();           // Play reverse
-        }
-
-        const tl = gsap.timeline();
-
-        // 1. Fade out Welcome Text & Button (WITH BLUR)
-        tl.to(".final-sequence-content", {
-            duration: 1.6,
-            y: -50,
-            autoAlpha: 0,
-            filter: "blur(10px)", // Restore Blur
-            ease: "expo.inOut"
-        }, "homeEnter")
-
-        // 2. Move Logo Container Back to True Center
-        .to(".container", {
-            duration: 1.6,
-            y: 0,
-            ease: "expo.inOut"
-        }, "homeEnter")
-
-        // 3. Counter-Animate Wreath + FADE OUT + BLUR
-        // Syncs perfectly with text disappearance
-        .to("#wreath-animation", {
-            duration: 1.6,
-            y: containerCurrentY,
-            autoAlpha: 0,         // Fade out together with text
-            filter: "blur(5px)",  // Add slight blur to match text style
-            ease: "expo.inOut"
-        }, "homeEnter")
-
-        // 4. Reveal Home Screen (if any content exists)
-        .to("#home-screen", {
-            duration: 1,
-            autoAlpha: 1,
-            ease: "power2.out"
-        }, "homeEnter+=0.5");
-    }
-
-    // --- APP LOGIC ---
-    let lastColorIndex = 0;
-
-    function startAppLogic() {
-        startCounter();
-    }
-
-    function changeColorOnce() {
-        let newIndex;
-        do {
-            newIndex = Math.floor(Math.random() * preloadColors.length);
-        } while (newIndex === lastColorIndex);
-        lastColorIndex = newIndex;
-        logoWrapperEl.style.backgroundColor = preloadColors[newIndex];
-    }
-
-    function startCounter() {
-        const progress = { val: 0 };
-        let lastIntVal = 0;
-
-        gsap.to(progress, {
-            val: 100,
-            duration: 6,
-            ease: "expo.inOut",
-            onUpdate: function() {
-                const currentVal = Math.floor(progress.val);
-
-                if (currentVal !== lastIntVal) {
-                    counterEl.textContent = toKannadaNum(currentVal);
-
-                    // CHANGED: Trigger color change at 1 OR every 5 (5, 10, 15, etc.)
-                    if (currentVal === 1 || (currentVal > 0 && currentVal % 5 === 0)) {
-                        changeColorOnce();
-                    }
-
-                    lastIntVal = currentVal;
-                }
-            },
-            onComplete: function() {
-                runExitAnimation();
-            }
-        });
-    }
-
-    // --- INIT ---
-    fetch('assets/metal.svg')
-        .then(response => response.text())
-        .then(svgContent => {
-            document.getElementById('logoWrapper').innerHTML = svgContent;
-            initLottie(); // Initialize Lottie here
-            runIntroAnimation();
-            if (window.initSVGLights) window.initSVGLights();
-        })
-        .catch(err => {
-            console.error('Error loading SVG:', err);
-            startAppLogic();
-        });
-
-</script>
+<!-- External Script -->
 <script src="script.js"></script>
 </body>
 </html>
