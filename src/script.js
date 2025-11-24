@@ -211,31 +211,24 @@ function runExitAnimation() {
     const finalContent = document.querySelector('.final-sequence-content');
 
     // 1. Prepare Layout Change
-    // We reveal the final content container so Flexbox can calculate the layout.
-    // However, this instantly expands the container height.
     gsap.set(finalContent, { display: "flex", autoAlpha: 1 });
-    // Children are still hidden from runIntroAnimation setup, so only the space is taken.
 
     // 2. Calculate Centering Offset
-    // Because .container is centered via yPercent: -50, adding height shifts the center point UP.
-    // To keep the Logo visually stationary at the start of the animation,
-    // we must push the container DOWN by half the height of the added content.
     const contentStyle = window.getComputedStyle(finalContent);
     const marginTop = parseFloat(contentStyle.marginTop);
     const addedHeight = finalContent.offsetHeight + marginTop;
     const centerShiftCorrection = addedHeight / 2;
 
-    // Apply immediate correction to prevent jump
+    // Apply immediate correction
     gsap.set(container, { y: centerShiftCorrection });
 
-    // Set initial state for text elements (pushed down slightly)
+    // Set initial state for text elements
     gsap.set([welcomeText, enterButton], { y: 20, autoAlpha: 0 });
 
     const finalColor = preloadColors[lastColorIndex];
     gsap.set("#wreath-animation path", { fill: finalColor, stroke: finalColor, opacity: 1.0 });
 
     tl.add("exitStart")
-    // Fade out loading text
     .to([leftText, rightText, kannadaText], {
         duration: 1.6,
         y: -50,
@@ -244,30 +237,27 @@ function runExitAnimation() {
         ease: "expo.inOut"
     }, "exitStart")
 
-    // Animate Container to True Center (y: 0)
-    // This effectively slides the whole group (Logo + Text) up until perfectly centered.
     .to(container, {
         duration: 1.6,
         y: 0,
         ease: "expo.inOut"
     }, "exitStart")
 
-    // Reveal Text (Slide it up slightly for effect)
     .to([welcomeText, enterButton], {
         duration: 0.8,
         y: 0,
         autoAlpha: 1,
         filter: "blur(0px)",
-        ease: "power2.out",
+        ease: "expo.out",
         stagger: 0,
-        clearProps: "filter,transform" // Clear transform to let flow handle resizing later
+        clearProps: "filter,transform"
     }, "exitStart+=0.7")
 
     .call(() => { if (wreathAnim) wreathAnim.play(); }, null, "exitStart+=0.4")
     .to("#wreath-animation", {
         duration: 1.0,
         autoAlpha: 1,
-        ease: "power2.out"
+        ease: "expo.out"
     }, "exitStart+=0.4");
 }
 
@@ -282,139 +272,158 @@ function enterSite() {
     const mainWrapper = document.querySelector('.main-content-wrapper');
     const textAnchor = document.querySelector('.text-anchor');
 
-    // Disable button click immediately
+    // Disable button interaction
     btn.style.pointerEvents = 'none';
     btn.classList.remove('interactive');
 
-    // 2. CREATE CLONES FOR SMOOTH EXIT
-    // We clone the elements that are about to disappear or change content.
-    // This allows the old "Welcome" text to exist while the new "Kannadiga" text fades in.
-
+    // 2. CREATE CLONES FOR SMOOTH EXIT (VISUAL SNAPSHOTS)
     const textRect = welcomeText.getBoundingClientRect();
     const btnRect = btn.getBoundingClientRect();
 
     const textClone = welcomeText.cloneNode(true);
     const btnClone = btn.cloneNode(true);
 
-    // Helper to position clones exactly over original elements
-    const setCloneStyles = (clone, rect) => {
-        clone.style.position = 'absolute';
+    // Remove ID to avoid duplicates
+    textClone.removeAttribute('id');
+    btnClone.removeAttribute('id');
+    btnClone.classList.remove('interactive');
+
+    // Helper: Position clones exactly where elements are visually on screen
+    const setFixedStyles = (clone, rect, original) => {
+        const compStyle = window.getComputedStyle(original);
+
+        clone.style.position = 'fixed';
         clone.style.top = rect.top + 'px';
         clone.style.left = rect.left + 'px';
         clone.style.width = rect.width + 'px';
         clone.style.height = rect.height + 'px';
         clone.style.margin = '0';
-        clone.style.transform = 'none'; // Clear any transform
+        clone.style.transform = 'none';
         clone.style.pointerEvents = 'none';
         clone.style.zIndex = '50';
+
+        // Preserve crucial text alignment props
+        clone.style.textAlign = compStyle.textAlign;
+        clone.style.display = compStyle.display;
+        clone.style.alignItems = compStyle.alignItems;
+        clone.style.justifyContent = compStyle.justifyContent;
+        clone.style.fontFamily = compStyle.fontFamily;
+        clone.style.fontSize = compStyle.fontSize;
+
         document.body.appendChild(clone);
     };
 
-    setCloneStyles(textClone, textRect);
-    setCloneStyles(btnClone, btnRect);
+    setFixedStyles(textClone, textRect, welcomeText);
+    setFixedStyles(btnClone, btnRect, btn);
 
     // 3. CAPTURE INITIAL STATE OF LOGO (For FLIP)
     const logoStartRect = logoWrapper.getBoundingClientRect();
 
-    // 4. FORCE FINAL LAYOUT STATE (The "Jump")
-    // This part happens instantly in logic but is hidden/animated by GSAP
+    // 4. CHANGE STATE (Hide originals, Update Layout)
+    gsap.set([welcomeText, btn], { autoAlpha: 0 });
+    gsap.set(btn, { display: "none" });
 
-    // Hide original elements visually (clones are showing their old state)
-    gsap.set(welcomeText, { opacity: 0 });
-    gsap.set(btn, { display: "none" }); // Remove button from flow to collapse layout
-    gsap.set(wreath, { opacity: 0 }); // Hide wreath
-
-    // Change Text Content to "Kannadiga"
+    // Change Content
     welcomeText.innerHTML = "ಕನ್ನಡಿಗ";
 
-    // Update Alignment CSS (Flex Start = Left Align)
+    // Change Layout to Left Aligned
     gsap.set(mainWrapper, { alignItems: "flex-start" });
     gsap.set(textAnchor, { alignItems: "flex-start" });
     gsap.set(welcomeText, { textAlign: "left", fontSize: "32px", margin: "0", padding: "0" });
 
-    // Show Definitions (Takes up space in new layout)
+    // Show Definitions
     gsap.set(defGroup, { display: "flex", autoAlpha: 1, marginTop: "20px" });
 
     // 5. CAPTURE FINAL STATE OF LOGO
-    // The browser has re-calculated layout due to the changes above.
     const logoEndRect = logoWrapper.getBoundingClientRect();
 
     // 6. CALCULATE FLIP DELTAS
-    // How much did the logo move?
     const deltaX = logoStartRect.left - logoEndRect.left;
     const deltaY = logoStartRect.top - logoEndRect.top;
 
-    // 7. SET INITIAL POSITIONS FOR ANIMATION
-
-    // LOGO: Instantly transform it BACK to where it started.
+    // 7. SET INITIAL POSITIONS (Invert)
     gsap.set(logoWrapper, { x: deltaX, y: deltaY });
-
-    // NEW TEXT: Set it to be invisible and offset vertically (like other texts)
-    // Previously was x: 20 (right-to-left), now y: 20 (bottom-to-top)
     gsap.set(welcomeText, { y: 20, x: 0, autoAlpha: 0 });
+    gsap.set([".def-phonetic", ".def-noun", ".def-desc"], { autoAlpha: 0, y: 15 });
 
-    // 8. ANIMATION TIMELINE
+    // 8. ANIMATE (Play)
     const tl = gsap.timeline();
-    const animEase = "expo.inOut";
-    const animDuration = 1.2;
 
-    // --- PHASE 1: TRANSITION START ---
+    // --- PHASE 1: EXITING ELEMENTS ---
 
-    // Animate LOGO from Start (delta) to End (0,0)
-    // This creates the gliding effect across the screen
+    // WREATH: Reverse immediately
+    // Speed: 0.6 (Slow reverse)
+    if (wreathAnim) {
+        wreathAnim.setDirection(-1);
+        wreathAnim.setSpeed(0.6);
+        wreathAnim.play();
+    }
+
+    // WREATH: Fade Out & Blur INSTANTLY
+    // Removed delay so movement and fade start together
+    tl.to(wreath, {
+        duration: 0.6,
+        autoAlpha: 0,
+        filter: "blur(15px)",
+        ease: "expo.in"
+    }, 0); // Delay removed (0s)
+
+    // TEXT CLONE: Fade & Blur Out
+    tl.to(textClone, {
+        duration: 0.6,
+        y: -40,
+        autoAlpha: 0,
+        filter: "blur(15px)",
+        ease: "expo.in"
+    }, 0);
+
+    // BUTTON CLONE: Fade & Blur Out
+    tl.to(btnClone, {
+        duration: 0.6,
+        y: 30,
+        autoAlpha: 0,
+        scale: 0.9,
+        filter: "blur(15px)",
+        ease: "expo.in"
+    }, 0);
+
+    // --- PHASE 2: MOVING ELEMENTS ---
+
+    // LOGO: Slide to new position
     tl.to(logoWrapper, {
         x: 0,
         y: 0,
-        duration: animDuration,
-        ease: animEase
-    }, 0);
-
-    // Animate OLD TEXT (Clone) Out
-    tl.to(textClone, {
-        y: -30,
-        autoAlpha: 0,
-        filter: "blur(10px)",
         duration: 0.8,
-        ease: "power2.in"
+        ease: "expo.inOut"
     }, 0);
 
-    // Animate BUTTON (Clone) Out
-    tl.to(btnClone, {
-        y: 20,
-        autoAlpha: 0,
-        scale: 0.9,
-        duration: 0.6,
-        ease: "power2.in"
-    }, 0);
+    // --- PHASE 3: ENTERING ELEMENTS ---
+    // Start at 0.6s
 
-    // --- PHASE 2: NEW CONTENT ENTRANCE ---
-
-    // Animate NEW TEXT ("Kannadiga") In
-    // We delay this slightly so it feels like it's replacing the old text
+    // NEW TEXT: Slide Up
     tl.to(welcomeText, {
-        y: 0, // Vertical animation instead of horizontal (x)
+        y: 0,
         autoAlpha: 1,
-        duration: 1.0,
-        ease: "power3.out"
-    }, 0.5);
+        duration: 0.7,
+        ease: "expo.out"
+    }, 0.6);
 
-    // Animate DEFINITIONS In
-    tl.fromTo([".def-phonetic", ".def-noun", ".def-desc"],
-        { autoAlpha: 0, y: 15 },
-        {
-            autoAlpha: (i, t) => t.classList.contains('def-desc') ? 1 : 0.4,
+    // DEFS: Cascade In
+    tl.to([".def-phonetic", ".def-noun", ".def-desc"], {
+            duration: 0.6,
             y: 0,
-            stagger: 0.08,
-            duration: 0.8,
-            ease: "power3.out"
+            autoAlpha: (i, t) => t.classList.contains('def-desc') ? 1 : 0.4,
+            stagger: 0.05,
+            ease: "expo.out"
         },
-        0.7 // Start after title appears
+        0.8
     );
 
     // 9. CLEANUP
     tl.call(() => {
         textClone.remove();
         btnClone.remove();
+        gsap.set(wreath, { display: "none" });
     });
 }
 
