@@ -91,6 +91,23 @@ body {
     align-items: center;
     pointer-events: none;
     backface-visibility: hidden;
+    /* Transformation is handled by GSAP (xPercent/yPercent) */
+}
+
+/* NEW WRAPPER FOR LOGO + TEXT */
+.main-content-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    /* ALIGNMENT FIX:
+       Width set explicitly to Logo Width (80px + 8px padding).
+       This pins the layout center to the Logo, preventing jump when text aligns left.
+    */
+    width: 88px;
+    align-items: center; /* Start centered for Welcome text */
+    pointer-events: none;
+    overflow: visible; /* Allows text to spill out to the right */
 }
 
 #wreath-animation {
@@ -101,7 +118,7 @@ body {
     width: 900px;
     height: 900px;
     max-width: 100vw;
-    margin-top: 120px;
+    margin-top: 20px;
     pointer-events: none;
     z-index: -1;
     visibility: visible;
@@ -159,14 +176,11 @@ body {
 
 /* --- MAIN SEQUENCE CONTAINER --- */
 .final-sequence-content {
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
+    position: relative;
     margin-top: 28px;
-    display: flex;
+    display: none;
     flex-direction: column;
-    align-items: center;
+    align-items: center; /* Initially centered */
     text-align: center;
     width: max-content;
     pointer-events: auto;
@@ -189,7 +203,7 @@ body {
     font-size: 48px;
     font-weight: 600;
     color: rgba(0, 0, 0, 1.0);
-    line-height: 1.6;
+    line-height: 125.5%;
     padding: 10px;
     margin: -10px 0 0 0;
     white-space: pre-line;
@@ -199,6 +213,8 @@ body {
     margin-top: -10px;
     will-change: transform, opacity, font-size;
     overflow: visible;
+    text-align: center;
+    width: 100%;
 }
 
 /* --- BUTTON --- */
@@ -218,6 +234,7 @@ body {
     display: inline-block;
     will-change: transform;
     transform: scale(1);
+    transform-origin: center top;
 }
 
 .enter-button.interactive {
@@ -230,25 +247,21 @@ body {
 
 /* --- DEFINITION GROUP --- */
 .def-group {
-    /* Absolute positioning ensures it doesn't stretch the container width */
-    position: absolute;
-    top: 100%;
-    left: 0; /* Aligns with left edge of Title container */
-
+    position: relative;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: flex-start; /* Keeps text inside left aligned */
     text-align: left;
-    width: max-content; /* Allows text to be wider than title if needed */
-    padding-top: 10px; /* Space between Title and Defs */
-    overflow: visible;
+    width: max-content;
+    margin-top: 20px;
+    overflow: hidden;
 }
 
 .def-phonetic {
     font-family: 'Inter', sans-serif;
     font-weight: 400;
     color: #000000;
-    opacity: 0.4;
+    opacity: 0.4; /* Set to 40% */
     margin-bottom: 16px;
     text-align: left;
 }
@@ -258,7 +271,7 @@ body {
     font-weight: 400;
     font-style: italic;
     color: #000000;
-    opacity: 0.4;
+    opacity: 0.4; /* Set to 40% */
     margin-bottom: 4px;
     text-align: left;
 }

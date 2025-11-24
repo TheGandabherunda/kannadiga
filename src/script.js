@@ -162,6 +162,9 @@ function runIntroAnimation() {
     gsap.set("#wreath-animation", { autoAlpha: 0 });
     gsap.set("#home-screen", { autoAlpha: 0 });
 
+    // Ensure final content is hidden from flow initially
+    gsap.set(".final-sequence-content", { display: "none" });
+
     // Hide def group initially
     gsap.set(".def-group", { autoAlpha: 0, display: "none" });
 
@@ -207,21 +210,32 @@ function runExitAnimation() {
     const enterButton = document.querySelector('.enter-button');
     const finalContent = document.querySelector('.final-sequence-content');
 
-    const bottomTextRect = kannadaText.getBoundingClientRect();
-    const welcomeRect = finalContent.getBoundingClientRect();
-    const fullDistanceY = (bottomTextRect.top + bottomTextRect.height / 2) - (welcomeRect.top + welcomeRect.height / 2);
-    const startY = fullDistanceY * 0.05;
+    // 1. Prepare Layout Change
+    // We reveal the final content container so Flexbox can calculate the layout.
+    // However, this instantly expands the container height.
+    gsap.set(finalContent, { display: "flex", autoAlpha: 1 });
+    // Children are still hidden from runIntroAnimation setup, so only the space is taken.
 
-    gsap.set([welcomeText, enterButton], { y: startY, autoAlpha: 0 });
+    // 2. Calculate Centering Offset
+    // Because .container is centered via yPercent: -50, adding height shifts the center point UP.
+    // To keep the Logo visually stationary at the start of the animation,
+    // we must push the container DOWN by half the height of the added content.
+    const contentStyle = window.getComputedStyle(finalContent);
+    const marginTop = parseFloat(contentStyle.marginTop);
+    const addedHeight = finalContent.offsetHeight + marginTop;
+    const centerShiftCorrection = addedHeight / 2;
 
-    const gap = 28;
-    const contentHeight = finalContent.offsetHeight;
-    const moveUpDistance = (gap + contentHeight) / 2;
+    // Apply immediate correction to prevent jump
+    gsap.set(container, { y: centerShiftCorrection });
+
+    // Set initial state for text elements (pushed down slightly)
+    gsap.set([welcomeText, enterButton], { y: 20, autoAlpha: 0 });
 
     const finalColor = preloadColors[lastColorIndex];
     gsap.set("#wreath-animation path", { fill: finalColor, stroke: finalColor, opacity: 1.0 });
 
     tl.add("exitStart")
+    // Fade out loading text
     .to([leftText, rightText, kannadaText], {
         duration: 1.6,
         y: -50,
@@ -229,25 +243,26 @@ function runExitAnimation() {
         filter: "blur(10px)",
         ease: "expo.inOut"
     }, "exitStart")
+
+    // Animate Container to True Center (y: 0)
+    // This effectively slides the whole group (Logo + Text) up until perfectly centered.
     .to(container, {
         duration: 1.6,
-        y: `-=${moveUpDistance}`,
+        y: 0,
         ease: "expo.inOut"
     }, "exitStart")
-    .to([welcomeText, enterButton], {
-        duration: 1.6,
-        y: 0,
-        ease: "expo.inOut",
-        stagger: 0
-    }, "exitStart")
+
+    // Reveal Text (Slide it up slightly for effect)
     .to([welcomeText, enterButton], {
         duration: 0.8,
+        y: 0,
         autoAlpha: 1,
         filter: "blur(0px)",
         ease: "power2.out",
         stagger: 0,
-        clearProps: "filter,transform"
+        clearProps: "filter,transform" // Clear transform to let flow handle resizing later
     }, "exitStart+=0.7")
+
     .call(() => { if (wreathAnim) wreathAnim.play(); }, null, "exitStart+=0.4")
     .to("#wreath-animation", {
         duration: 1.0,
@@ -284,13 +299,26 @@ function enterSite() {
     // 1. SWITCH ALIGNMENT & TEXT SWAP (Instant at Start)
     tl.call(() => {
         welcomeText.textContent = "ಕನ್ನಡಿಗ";
+
+        // --- DYNAMIC ALIGNMENT SWITCH ---
+        // 1. Align the Wrapper Items to Start (Left)
+        // Since wrapper width is pinned to 88px, this creates a shelf starting at Logo Left.
+        gsap.set(".main-content-wrapper", { alignItems: "flex-start" });
+
+        // 2. Align Text Anchor & Content to Left
+        gsap.set(".text-anchor", { alignItems: "flex-start" });
+        gsap.set(welcomeText, { textAlign: "left" });
     }, null, "syncStart");
 
-    // 2. Button Exit: Blur + Fade + MOVE UP
+    // 2. Button Exit: Blur + Fade + SHRINK HEIGHT
+    // By animating height to 0, we allow the container to shrink, which updates center
     tl.to(btn, {
         duration: animDuration,
         autoAlpha: 0,
-        y: -30,
+        height: 0,
+        margin: 0,
+        padding: 0,
+        borderWidth: 0,
         filter: "blur(10px)",
         ease: animEase
     }, "syncStart");
@@ -304,17 +332,7 @@ function enterSite() {
         ease: animEase
     }, "syncStart");
 
-    // 4. Button Layout Collapse
-    tl.to(btn, {
-        height: 0,
-        margin: 0,
-        padding: 0,
-        borderWidth: 0,
-        duration: animDuration,
-        ease: animEase
-    }, "syncStart");
-
-    // 5. Text Morph (Size & Position changes)
+    // 4. Text Morph (Size & Position changes)
     tl.to(welcomeText, {
         duration: animDuration,
         fontSize: "32px",
@@ -325,32 +343,33 @@ function enterSite() {
         ease: animEase
     }, "syncStart");
 
-    // 6. Container Move (Resets to Center - Moves Logo/Text down)
-    tl.to(".container", {
-        duration: animDuration,
-        y: 0,
-        ease: animEase
-    }, "syncStart");
-
-    // 7. Final Content Position Adjustment
-    tl.to(finalContent, {
-        marginTop: "20px",
-        duration: animDuration,
-        ease: animEase
-    }, "syncStart");
-
-    // 8. Reveal Dictionary Details (IMMEDIATE START - No Delay)
-    // Changed from "syncStart+=" + animDuration to "syncStart"
+    // 5. Reveal Dictionary Details (Grow Height Smoothly)
+    // We set display to flex immediately, but animate height from 0 to 'auto'
     tl.set(".def-group", { display: "flex", autoAlpha: 1 }, "syncStart")
+      .fromTo(".def-group",
+        { height: 0, marginTop: 0 },
+        {
+            height: "auto",
+            marginTop: 20,
+            duration: animDuration,
+            ease: animEase
+        },
+        "syncStart"
+      )
       .fromTo([".def-phonetic", ".def-noun", ".def-desc"],
         { autoAlpha: 0, y: 20, filter: "blur(5px)" },
         {
             duration: 0.8,
-            autoAlpha: 1,
+            // Functional Value to determine Opacity
+            // Phonetic & Noun = 0.4, Desc = 1.0
+            autoAlpha: (i, target) => {
+                if (target.classList.contains('def-desc')) return 1;
+                return 0.4;
+            },
             y: 0,
             filter: "blur(0px)",
-            stagger: 0.1, // Reduced stagger slightly for snap
-            ease: "expo.out" // Matched easing
+            stagger: 0.1,
+            ease: "expo.out"
         }, "syncStart");
 }
 
