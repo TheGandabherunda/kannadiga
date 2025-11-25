@@ -30,6 +30,7 @@
 * {
     cursor: none !important;
     box-sizing: border-box;
+    user-select: none; /* Improves dragging experience */
 }
 
 ::selection {
@@ -47,13 +48,56 @@ body {
     padding: 0;
     width: 100vw;
     height: 100vh;
+    background-color: #F2EFE5;
+    font-family: sans-serif;
+    overflow: hidden; /* Hide native scrollbars */
+    position: relative;
+}
+
+/* --- HORIZONTAL SCROLL INFRASTRUCTURE --- */
+
+#scroll-viewport {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    /* Ensure it handles touch events properly */
+    touch-action: none;
+}
+
+#scroll-track {
+    display: flex;
+    flex-wrap: nowrap;
+    width: max-content;
+    height: 100%;
+    will-change: transform; /* Performance hint */
+}
+
+.scroll-section {
+    height: 100%;
+    position: relative;
+    flex-shrink: 0;
+}
+
+/* SECTION 1: HOME (Original Container) */
+.home-section {
+    width: 100vw; /* Takes full screen initially */
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #F2EFE5;
-    font-family: sans-serif;
-    overflow: hidden;
-    position: relative;
+}
+
+/* SECTION 2 & 3: Placeholders */
+.placeholder-section {
+    width: 60vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-left: 1px dashed rgba(0,0,0,0.1);
+    color: #000;
 }
 
 /* --- CUSTOM CURSOR --- */
@@ -118,7 +162,6 @@ body {
     pointer-events: none;
     z-index: -1;
     visibility: visible;
-    /* Blur handled by GSAP */
 }
 
 .logo-wrapper {

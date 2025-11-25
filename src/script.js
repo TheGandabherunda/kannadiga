@@ -356,7 +356,16 @@ function enterSite() {
     gsap.set([".def-phonetic", ".def-noun", ".def-desc"], { autoAlpha: 0, y: 15, filter: "blur(8px)" });
 
     // 8. ANIMATE (Play)
-    const tl = gsap.timeline();
+    const tl = gsap.timeline({
+        onComplete: () => {
+            textClone.remove();
+            btnClone.remove();
+            gsap.set(wreath, { display: "none" });
+
+            // --- TRIGGER HORIZONTAL SCROLL HERE ---
+            enableSmoothScroll();
+        }
+    });
 
     // --- PHASE 1: EXITING ELEMENTS ---
 
@@ -427,14 +436,147 @@ function enterSite() {
         },
         0.8
     );
-
-    // 9. CLEANUP
-    tl.call(() => {
-        textClone.remove();
-        btnClone.remove();
-        gsap.set(wreath, { display: "none" });
-    });
 }
+
+/* =========================================
+   HORIZONTAL SCROLL & DRAG PHYSICS
+   ========================================= */
+class SmoothScroll {
+    constructor(trackId) {
+        this.track = document.getElementById(trackId);
+        this.current = 0;
+        this.target = 0;
+        this.maxScroll = 0;
+
+        // Interaction Flags
+        this.isDragging = false;
+        this.isWheeling = false;
+        this.wheelTimeout = null;
+
+        this.startX = 0;
+        this.dragStartScroll = 0;
+        this.rafId = null;
+
+        // Physics Params
+        this.friction = 0.08; // Inertia for the actual scroll (current following target)
+        this.springFactor = 0.2; // INCREASED: Was 0.1, set to 0.2 for faster snap back
+        this.dragSpeed = 1.5;
+        this.elasticity = 0.2; // Resistance factor when out of bounds
+
+        this.init();
+    }
+
+    updateDimensions() {
+        this.maxScroll = this.track.scrollWidth - window.innerWidth;
+    }
+
+    init() {
+        this.updateDimensions();
+        window.addEventListener('resize', () => this.updateDimensions());
+
+        // Wheel Event
+        window.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
+
+        // Drag Events
+        window.addEventListener('mousedown', (e) => this.onDown(e));
+        window.addEventListener('touchstart', (e) => this.onDown(e.touches[0]), { passive: false });
+
+        window.addEventListener('mousemove', (e) => this.onMove(e));
+        window.addEventListener('touchmove', (e) => this.onMove(e.touches[0]), { passive: false });
+
+        window.addEventListener('mouseup', () => this.onUp());
+        window.addEventListener('touchend', () => this.onUp());
+
+        // Start Loop
+        this.animate();
+    }
+
+    onWheel(e) {
+        // Optional: Prevent browser navigation
+        // e.preventDefault();
+
+        let delta = e.deltaY;
+
+        // 1. Apply Resistance if out of bounds (Elasticity)
+        if (this.target < 0 || this.target > this.maxScroll) {
+            delta *= this.elasticity;
+        }
+
+        this.target += delta;
+
+        // 2. Manage Wheeling State for Snap Back
+        this.isWheeling = true;
+        if (this.wheelTimeout) clearTimeout(this.wheelTimeout);
+
+        this.wheelTimeout = setTimeout(() => {
+            this.isWheeling = false;
+        }, 100); // Wait for scroll to stop before snapping back
+    }
+
+    onDown(e) {
+        this.isDragging = true;
+        this.startX = e.clientX;
+        this.dragStartScroll = this.target;
+        this.track.style.cursor = 'grabbing';
+    }
+
+    onMove(e) {
+        if (!this.isDragging) return;
+
+        const delta = (e.clientX - this.startX) * this.dragSpeed;
+        this.target = this.dragStartScroll - delta;
+
+        // Apply elasticity if out of bounds
+        if (this.target < 0) {
+            this.target = this.target * this.elasticity;
+        } else if (this.target > this.maxScroll) {
+            const extra = this.target - this.maxScroll;
+            this.target = this.maxScroll + (extra * this.elasticity);
+        }
+    }
+
+    onUp() {
+        this.isDragging = false;
+        this.track.style.cursor = 'grab';
+
+        // Snap logic is handled in animate() now to unify wheel/drag release
+    }
+
+    animate() {
+        // 1. Snap Target Back to Bounds if not interacting
+        if (!this.isDragging && !this.isWheeling) {
+             if (this.target < 0) {
+                 this.target += (0 - this.target) * this.springFactor;
+                 if (Math.abs(this.target) < 0.1) this.target = 0;
+             } else if (this.target > this.maxScroll) {
+                 this.target += (this.maxScroll - this.target) * this.springFactor;
+                 if (Math.abs(this.target - this.maxScroll) < 0.1) this.target = this.maxScroll;
+             }
+        }
+
+        // 2. Interpolate Current towards Target (Momentum)
+        this.current += (this.target - this.current) * this.friction;
+
+        // Optimization: Snap current to target if very close (only if target is settled)
+        if (Math.abs(this.target - this.current) < 0.05 && !this.isDragging && !this.isWheeling) {
+            this.current = this.target;
+        }
+
+        // 3. Apply Transform
+        this.track.style.transform = `translate3d(${-this.current}px, 0, 0)`;
+
+        this.rafId = requestAnimationFrame(() => this.animate());
+    }
+}
+
+function enableSmoothScroll() {
+    // Initialize the smooth scroll class
+    // We add a small delay to ensure DOM is settled
+    setTimeout(() => {
+        new SmoothScroll('scroll-track');
+    }, 100);
+}
+
 
 function startAppLogic() {
     startCounter();

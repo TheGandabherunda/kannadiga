@@ -25,7 +25,6 @@
     <!-- Prevent FOUC & Performance Hints -->
     <style>
         .loading-text-left,
-        .container,
         .bottom-text,
         .loading-text-right,
         .welcome-text,
@@ -34,13 +33,13 @@
         #home-screen,
         .def-group {
             visibility: hidden; /* GSAP handles visibility */
-            will-change: transform, opacity, filter; /* Performance boost for blurs */
+            will-change: transform, opacity, filter;
         }
 
-        /* Ensure smooth rendering of text during animation */
         body {
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            overscroll-behavior: none; /* Prevents browser back swipe */
         }
     </style>
 </head>
@@ -52,49 +51,73 @@
 <!-- HOME SCREEN LAYER -->
 <div id="home-screen"></div>
 
-<!-- LEFT TEXT -->
-<div class="loading-text-left">ಸಿರಿಗನ್ನಡಂ ಗೆಲ್ಗೆ &nbsp; • &nbsp; ಸಿರಿಗನ್ನಡಂ ಬಾಳ್ಗೆ</div>
+<!-- SCROLL VIEWPORT (Masks the content) -->
+<div id="scroll-viewport">
+    <!-- SCROLL TRACK (Moves horizontally) -->
+    <div id="scroll-track">
 
-<!-- CENTER: Logo Container -->
-<div class="container" id="interaction-container">
-    <!-- Wreath Animation Container -->
-    <div id="wreath-animation"></div>
+        <!-- SECTION 1: MAIN HOME CONTENT (Original) -->
+        <div class="scroll-section home-section">
 
-    <!-- NEW WRAPPER: Groups Logo and Below Texts together -->
-    <div class="main-content-wrapper">
+            <!-- LEFT TEXT (Original Position) -->
+            <div class="loading-text-left">ಸಿರಿಗನ್ನಡಂ ಗೆಲ್ಗೆ &nbsp; • &nbsp; ಸಿರಿಗನ್ನಡಂ ಬಾಳ್ಗೆ</div>
 
-        <div class="logo-wrapper" id="logoWrapper">
-            <!-- SVG injected here by JS -->
-        </div>
+            <!-- CENTER: Logo Container -->
+            <div class="container" id="interaction-container">
+                <!-- Wreath Animation Container -->
+                <div id="wreath-animation"></div>
 
-        <!-- MAIN SEQUENCE CONTENT -->
-        <div class="final-sequence-content">
-            <!-- Text Wrapper: Shrinks to fit Title, used for alignment -->
-            <div class="text-anchor">
-                <!-- This text transforms into the Title -->
-                <div class="welcome-text">ನಿಮಗೆ<br>ಆತ್ಮೀಯ ಸ್ವಾಗತ.</div>
+                <!-- NEW WRAPPER: Groups Logo and Below Texts together -->
+                <div class="main-content-wrapper">
 
-                <!-- Dictionary Elements (Absolute positioned relative to anchor) -->
-                <div class="def-group">
-                    <div class="def-phonetic">♪ kannaḍiga</div>
-                    <div class="def-noun">noun</div>
-                    <div class="def-desc">a man whose mother tongue is Kannaḍa;</div>
-                    <div class="def-desc">a man belonging to Karnāṭaka.</div>
+                    <div class="logo-wrapper" id="logoWrapper">
+                        <!-- SVG injected here by JS -->
+                    </div>
+
+                    <!-- MAIN SEQUENCE CONTENT -->
+                    <div class="final-sequence-content">
+                        <!-- Text Wrapper: Shrinks to fit Title, used for alignment -->
+                        <div class="text-anchor">
+                            <!-- This text transforms into the Title -->
+                            <div class="welcome-text">ನಿಮಗೆ<br>ಆತ್ಮೀಯ ಸ್ವಾಗತ.</div>
+
+                            <!-- Dictionary Elements (Absolute positioned relative to anchor) -->
+                            <div class="def-group">
+                                <div class="def-phonetic">♪ kannaḍiga</div>
+                                <div class="def-noun">noun</div>
+                                <div class="def-desc">a man whose mother tongue is Kannaḍa;</div>
+                                <div class="def-desc">a man belonging to Karnāṭaka.</div>
+                            </div>
+                        </div>
+
+                        <!-- Button (Disappears on click) -->
+                        <button class="enter-button" onclick="enterSite()">ಪ್ರವೇಶಿಸಿ</button>
+                    </div>
+
                 </div>
             </div>
 
-            <!-- Button (Disappears on click) -->
-            <button class="enter-button" onclick="enterSite()">ಪ್ರವೇಶಿಸಿ</button>
+            <!-- BOTTOM TEXT -->
+            <div class="bottom-text" id="loadingCounter">೦೦</div>
+
+            <!-- RIGHT TEXT -->
+            <div class="loading-text-right">ಕನ್ನಡಿಗ</div>
+
+        </div>
+
+        <!-- SECTION 2: Placeholder (For scroll testing) -->
+        <div class="scroll-section placeholder-section">
+            <h2 class="text-4xl font-bold opacity-20">Section 02</h2>
+            <p class="mt-4 opacity-40">Scroll or Drag to see this area.</p>
+        </div>
+
+        <!-- SECTION 3: Placeholder (For scroll testing) -->
+        <div class="scroll-section placeholder-section">
+            <h2 class="text-4xl font-bold opacity-20">Section 03</h2>
         </div>
 
     </div>
 </div>
-
-<!-- BOTTOM TEXT -->
-<div class="bottom-text" id="loadingCounter">೦೦</div>
-
-<!-- RIGHT TEXT -->
-<div class="loading-text-right">ಕನ್ನಡಿಗ</div>
 
 <!-- External Script -->
 <script src="script.js"></script>
