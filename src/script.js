@@ -154,12 +154,12 @@ function runIntroAnimation() {
     const topRowElements = ['.loading-text-left', '.container', '.loading-text-right'];
     const kannadaElement = '.bottom-text';
 
-    // Initial Setters
+    // Initial Setters: All elements start fuzzy (blur) and hidden
     gsap.set(".container", { xPercent: -50, yPercent: -50 });
     gsap.set([".loading-text-left", ".loading-text-right"], { yPercent: -50 });
     gsap.set(kannadaElement, { xPercent: -50, autoAlpha: 0, y: 50, filter: "blur(10px)" });
     gsap.set([".welcome-text", ".enter-button"], { autoAlpha: 0, y: 50, filter: "blur(10px)" });
-    gsap.set("#wreath-animation", { autoAlpha: 0 });
+    gsap.set("#wreath-animation", { autoAlpha: 0, filter: "blur(10px)" }); // Set wreath initial blur
     gsap.set("#home-screen", { autoAlpha: 0 });
 
     // Ensure final content is hidden from flow initially
@@ -170,7 +170,7 @@ function runIntroAnimation() {
 
     gsap.set(topRowElements, { autoAlpha: 0, y: 50, filter: "blur(10px)" });
 
-    // Animation
+    // Animation: Fade in + Unblur
     tl.to(topRowElements, {
         duration: 2.0,
         autoAlpha: 1,
@@ -178,7 +178,7 @@ function runIntroAnimation() {
         filter: "blur(0px)",
         stagger: 0,
         ease: "expo.inOut",
-        clearProps: "filter"
+        clearProps: "filter" // Clear for sharpness after anim
     })
     .to(kannadaElement, {
         duration: 2.0,
@@ -222,18 +222,21 @@ function runExitAnimation() {
     // Apply immediate correction
     gsap.set(container, { y: centerShiftCorrection });
 
-    // Set initial state for text elements
-    gsap.set([welcomeText, enterButton], { y: 20, autoAlpha: 0 });
+    // Set initial state for text elements (Blurred)
+    gsap.set([welcomeText, enterButton], { y: 20, autoAlpha: 0, filter: "blur(10px)" });
+    // Set initial state for Wreath (Blurred)
+    gsap.set("#wreath-animation", { autoAlpha: 0, filter: "blur(10px)" });
 
     const finalColor = preloadColors[lastColorIndex];
     gsap.set("#wreath-animation path", { fill: finalColor, stroke: finalColor, opacity: 1.0 });
 
     tl.add("exitStart")
+    // EXIT OLD ELEMENTS: Blur Out
     .to([leftText, rightText, kannadaText], {
         duration: 1.6,
         y: -50,
         autoAlpha: 0,
-        filter: "blur(10px)",
+        filter: "blur(15px)", // Increased blur for exit
         ease: "expo.inOut"
     }, "exitStart")
 
@@ -243,20 +246,24 @@ function runExitAnimation() {
         ease: "expo.inOut"
     }, "exitStart")
 
+    // ENTER NEW TEXT: Unblur In
     .to([welcomeText, enterButton], {
-        duration: 0.8,
+        duration: 1.2,
         y: 0,
         autoAlpha: 1,
         filter: "blur(0px)",
         ease: "expo.out",
-        stagger: 0,
+        stagger: 0.1,
         clearProps: "filter,transform"
     }, "exitStart+=0.7")
 
     .call(() => { if (wreathAnim) wreathAnim.play(); }, null, "exitStart+=0.4")
+
+    // ENTER WREATH: Unblur In
     .to("#wreath-animation", {
-        duration: 1.0,
+        duration: 1.5,
         autoAlpha: 1,
+        filter: "blur(0px)",
         ease: "expo.out"
     }, "exitStart+=0.4");
 }
@@ -343,8 +350,10 @@ function enterSite() {
 
     // 7. SET INITIAL POSITIONS (Invert)
     gsap.set(logoWrapper, { x: deltaX, y: deltaY });
-    gsap.set(welcomeText, { y: 20, x: 0, autoAlpha: 0 });
-    gsap.set([".def-phonetic", ".def-noun", ".def-desc"], { autoAlpha: 0, y: 15 });
+
+    // Prepare New Elements (Blurred & Hidden)
+    gsap.set(welcomeText, { y: 20, x: 0, autoAlpha: 0, filter: "blur(10px)" });
+    gsap.set([".def-phonetic", ".def-noun", ".def-desc"], { autoAlpha: 0, y: 15, filter: "blur(8px)" });
 
     // 8. ANIMATE (Play)
     const tl = gsap.timeline();
@@ -352,7 +361,6 @@ function enterSite() {
     // --- PHASE 1: EXITING ELEMENTS ---
 
     // WREATH: Reverse immediately
-    // Speed: 0.6 (Slow reverse)
     if (wreathAnim) {
         wreathAnim.setDirection(-1);
         wreathAnim.setSpeed(0.6);
@@ -360,17 +368,16 @@ function enterSite() {
     }
 
     // WREATH: Fade Out & Blur INSTANTLY
-    // Removed delay so movement and fade start together
     tl.to(wreath, {
-        duration: 0.6,
+        duration: 0.8,
         autoAlpha: 0,
-        filter: "blur(15px)",
+        filter: "blur(15px)", // Heavy blur for exit
         ease: "expo.in"
-    }, 0); // Delay removed (0s)
+    }, 0);
 
     // TEXT CLONE: Fade & Blur Out
     tl.to(textClone, {
-        duration: 0.6,
+        duration: 0.8, // MATCHED TO WREATH (Was 0.6)
         y: -40,
         autoAlpha: 0,
         filter: "blur(15px)",
@@ -379,7 +386,7 @@ function enterSite() {
 
     // BUTTON CLONE: Fade & Blur Out
     tl.to(btnClone, {
-        duration: 0.6,
+        duration: 0.8, // MATCHED TO WREATH (Was 0.6)
         y: 30,
         autoAlpha: 0,
         scale: 0.9,
@@ -393,27 +400,29 @@ function enterSite() {
     tl.to(logoWrapper, {
         x: 0,
         y: 0,
-        duration: 0.8,
+        duration: 1.0,
         ease: "expo.inOut"
     }, 0);
 
     // --- PHASE 3: ENTERING ELEMENTS ---
-    // Start at 0.6s
+    // Start slightly after logo moves
 
-    // NEW TEXT: Slide Up
+    // NEW TEXT (Title): Slide Up & Unblur
     tl.to(welcomeText, {
         y: 0,
         autoAlpha: 1,
-        duration: 0.7,
+        filter: "blur(0px)",
+        duration: 1.0,
         ease: "expo.out"
     }, 0.6);
 
-    // DEFS: Cascade In
+    // DEFS: Cascade In & Unblur
     tl.to([".def-phonetic", ".def-noun", ".def-desc"], {
-            duration: 0.6,
+            duration: 1.0,
             y: 0,
             autoAlpha: (i, t) => t.classList.contains('def-desc') ? 1 : 0.4,
-            stagger: 0.05,
+            filter: "blur(0px)",
+            stagger: 0.08,
             ease: "expo.out"
         },
         0.8

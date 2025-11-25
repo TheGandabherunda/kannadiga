@@ -22,7 +22,7 @@
     <!-- External CSS -->
     <link rel="stylesheet" href="styles.css">
 
-    <!-- Prevent FOUC -->
+    <!-- Prevent FOUC & Performance Hints -->
     <style>
         .loading-text-left,
         .container,
@@ -33,7 +33,14 @@
         #wreath-animation,
         #home-screen,
         .def-group {
-            visibility: hidden;
+            visibility: hidden; /* GSAP handles visibility */
+            will-change: transform, opacity, filter; /* Performance boost for blurs */
+        }
+
+        /* Ensure smooth rendering of text during animation */
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
     </style>
 </head>
