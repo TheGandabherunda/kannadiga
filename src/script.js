@@ -616,7 +616,28 @@ function startCounter() {
 fetch('assets/metal.svg')
     .then(response => response.text())
     .then(svgContent => {
-        document.getElementById('logoWrapper').innerHTML = svgContent;
+        // 1. Inject Standard Logo
+        const desktopWrapper = document.getElementById('logoWrapper');
+        if (desktopWrapper) {
+            desktopWrapper.innerHTML = svgContent;
+        }
+
+        // 2. Inject Mobile Logo with Unique IDs
+        const mobileWrapper = document.getElementById('mobileLogoWrapper');
+        if (mobileWrapper) {
+            // Uniquify IDs to prevent clashes with the desktop SVG
+            let uniqueSvg = svgContent;
+
+            // Replace IDs (e.g., id="gradient" -> id="mobile-gradient")
+            uniqueSvg = uniqueSvg.replace(/id="([^"]+)"/g, 'id="mobile-$1"');
+
+            // Replace References (e.g., url(#gradient) -> url(#mobile-gradient))
+            uniqueSvg = uniqueSvg.replace(/url\(#([^)]+)\)/g, 'url(#mobile-$1)');
+            uniqueSvg = uniqueSvg.replace(/xlink:href="#([^"]+)"/g, 'xlink:href="#mobile-$1"');
+
+            mobileWrapper.innerHTML = uniqueSvg;
+        }
+
         initLottie();
         runIntroAnimation();
         if (window.initSVGLights) window.initSVGLights();

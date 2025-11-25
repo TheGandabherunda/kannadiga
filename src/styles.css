@@ -54,6 +54,82 @@ body {
     position: relative;
 }
 
+/* --- MOBILE/TABLET WARNING SCREEN --- */
+#mobile-warning {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh; /* Fallback */
+    height: 100dvh; /* Dynamic Viewport Height for mobile browsers */
+    background-color: #F2EFE5;
+    z-index: 99999; /* Highest priority */
+    display: flex; /* Flex is default, toggled via media query */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 30px;
+    padding: 20px; /* Safe padding for edges */
+}
+
+#mobileLogoWrapper {
+    /* Use flex to ensure the SVG inside is centered perfectly */
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+.warning-text-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    align-items: center;
+}
+
+.warning-text-kannada {
+    font-family: 'Noto Sans Kannada UI', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: #000000;
+    line-height: 1.5;
+}
+
+.warning-text-english {
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    color: #000000;
+    line-height: 1.5;
+}
+
+/* --- MEDIA QUERIES FOR VISIBILITY --- */
+
+/* Desktop (Large Screens): Hide warning, show app */
+@media (min-width: 1025px) {
+    #mobile-warning {
+        display: none !important;
+    }
+}
+
+/* Mobile/Tablet (Small Screens): Show warning, hide app elements */
+@media (max-width: 1024px) {
+    #scroll-viewport,
+    #home-screen,
+    #custom-cursor {
+        display: none !important;
+    }
+
+    /* Ensure native cursor is visible on mobile warning */
+    * {
+        cursor: auto !important;
+    }
+}
+
+
 /* --- HORIZONTAL SCROLL INFRASTRUCTURE --- */
 
 #scroll-viewport {
