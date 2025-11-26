@@ -6,21 +6,40 @@ const container = document.querySelector('.container');
 const logoWrapper = document.getElementById('logoWrapper');
 
 // --- 1. MOVEMENT ---
-gsap.set(cursor, { xPercent: -50, yPercent: -50 });
-const xTo = gsap.quickTo(cursor, "x", { duration: 0.2, ease: "power3.out" });
-const yTo = gsap.quickTo(cursor, "y", { duration: 0.2, ease: "power3.out" });
+// Track mouse position globally
+let lastMouseX = window.innerWidth / 2;
+let lastMouseY = window.innerHeight / 2;
+
+// Initial set
+gsap.set(cursor, { xPercent: -50, yPercent: -50, x: lastMouseX, y: lastMouseY });
 
 window.addEventListener('mousemove', (e) => {
-    xTo(e.clientX);
-    yTo(e.clientY);
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+
+    // Only update position if NOT hovering a menu item
+    if (!isMenuHover) {
+        // We use gsap.to instead of quickTo for better compatibility with the snap animations
+        gsap.to(cursor, {
+            x: e.clientX,
+            y: e.clientY,
+            duration: 0.15,
+            ease: "power3.out",
+            overwrite: "auto" // Only overwrite x/y, leave width/height alone if possible
+        });
+    }
 });
 
 // --- 2. STATE MANAGEMENT ---
 let isTextHover = false;
+let isMenuHover = false;
 let currentTextHeight = 0;
+
 const textSelectors = '.loading-text-left, .loading-text-right, .bottom-text, .welcome-text, p, h1, h2, h3, h4, h5, h6, span, .def-phonetic, .def-noun, .def-desc';
+const menuSelectors = '#top-nav a';
 
 const attachHoverListeners = () => {
+    // Generic Text Hover (Bar Cursor)
     document.querySelectorAll(textSelectors).forEach(el => {
         if(el.dataset.cursorAttached) return;
         el.dataset.cursorAttached = "true";
@@ -29,11 +48,76 @@ const attachHoverListeners = () => {
             const style = window.getComputedStyle(el);
             const fontSize = parseFloat(style.fontSize);
             currentTextHeight = fontSize;
-            gsap.to(cursor, { width: 2, height: fontSize, duration: 0.3, ease: "expo.out" });
+
+            gsap.to(cursor, {
+                width: 2,
+                height: fontSize,
+                duration: 0.3,
+                ease: "power3.out",
+                overwrite: "auto"
+            });
         });
         el.addEventListener('mouseleave', () => {
             isTextHover = false;
-            gsap.to(cursor, { width: 14, height: 14, duration: 0.3, ease: "expo.out" });
+            if(!isMenuHover) {
+                gsap.to(cursor, {
+                    width: 14,
+                    height: 14,
+                    duration: 0.3,
+                    ease: "power3.out",
+                    overwrite: "auto"
+                });
+            }
+        });
+    });
+
+    // Menu Item Hover (Magnetic Background Fill + Brackets)
+    document.querySelectorAll(menuSelectors).forEach(el => {
+        if(el.dataset.cursorAttached) return;
+        el.dataset.cursorAttached = "true";
+        el.addEventListener('mouseenter', () => {
+            isMenuHover = true;
+            cursor.classList.add('menu-mode'); // Trigger visual change (brackets)
+
+            const rect = el.getBoundingClientRect();
+
+            // SNAP TO MENU ITEM
+            // We use overwrite: true to ensuring we kill any mouse-following momentum immediately
+            gsap.to(cursor, {
+                width: rect.width + 12,
+                height: rect.height + 6,
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2,
+                borderRadius: 0,
+                duration: 0.4,
+                ease: "power3.out",
+                overwrite: true
+            });
+        });
+
+        el.addEventListener('mouseleave', () => {
+            isMenuHover = false;
+            cursor.classList.remove('menu-mode'); // Revert visual change
+
+            // 1. Reset SHAPE (Size)
+            gsap.to(cursor, {
+                width: 14,
+                height: 14,
+                borderRadius: 0,
+                duration: 0.3,
+                ease: "power2.out",
+                overwrite: "auto"
+            });
+
+            // 2. Reset POSITION (Return to Mouse)
+            // We explicitly fire this to bridge the gap between mouseleave and the next mousemove
+            gsap.to(cursor, {
+                x: lastMouseX,
+                y: lastMouseY,
+                duration: 0.15,
+                ease: "power3.out",
+                overwrite: "auto"
+            });
         });
     });
 };
@@ -43,17 +127,21 @@ attachHoverListeners();
 // --- 3. CLICK INTERACTION ---
 window.addEventListener('mousedown', () => {
     if (isTextHover) {
-        gsap.to(cursor, { height: currentTextHeight - 2, duration: 0.15, ease: "power2.out" });
+        gsap.to(cursor, { height: currentTextHeight - 2, duration: 0.15, ease: "power2.out", overwrite: "auto" });
+    } else if (isMenuHover) {
+        gsap.to(cursor, { scale: 0.9, duration: 0.15, ease: "power2.out", overwrite: "auto" });
     } else {
-        gsap.to(cursor, { width: 12, height: 12, duration: 0.15, ease: "power2.out" });
+        gsap.to(cursor, { width: 12, height: 12, duration: 0.15, ease: "power2.out", overwrite: "auto" });
     }
 });
 
 window.addEventListener('mouseup', () => {
     if (isTextHover) {
-        gsap.to(cursor, { height: currentTextHeight, duration: 0.15, ease: "power2.out" });
+        gsap.to(cursor, { height: currentTextHeight, duration: 0.15, ease: "power2.out", overwrite: "auto" });
+    } else if (isMenuHover) {
+        gsap.to(cursor, { scale: 1.0, duration: 0.15, ease: "power2.out", overwrite: "auto" });
     } else {
-        gsap.to(cursor, { width: 14, height: 14, duration: 0.15, ease: "power2.out" });
+        gsap.to(cursor, { width: 14, height: 14, duration: 0.15, ease: "power2.out", overwrite: "auto" });
     }
 });
 
@@ -162,6 +250,9 @@ function runIntroAnimation() {
     gsap.set("#wreath-animation", { autoAlpha: 0, filter: "blur(10px)" }); // Set wreath initial blur
     gsap.set("#home-screen", { autoAlpha: 0 });
     gsap.set("#scroll-instruction", { autoAlpha: 0, filter: "blur(10px)" }); // Ensure instruction is hidden
+
+    // Ensure Top Nav is hidden initially
+    gsap.set("#top-nav", { autoAlpha: 0, y: -20, filter: "blur(10px)" });
 
     // Ensure final content is hidden from flow initially
     gsap.set(".final-sequence-content", { display: "none" });
@@ -366,14 +457,17 @@ function enterSite() {
             // --- TRIGGER HORIZONTAL SCROLL HERE ---
             enableSmoothScroll();
 
-            // --- TRIGGER SCROLL INSTRUCTION ---
-            gsap.to("#scroll-instruction", {
+             // --- SYNCED APPEARANCE ---
+             gsap.to(["#top-nav", "#scroll-instruction"], {
                 autoAlpha: 1,
+                y: 0,
                 filter: "blur(0px)",
-                duration: 2.0,
-                delay: 0.5,
+                duration: 0.8,
                 ease: "power2.out"
             });
+
+            // Re-attach hover for the new menu items
+            attachHoverListeners();
         }
     });
 

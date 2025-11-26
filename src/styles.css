@@ -119,7 +119,8 @@ body {
 @media (max-width: 1024px) {
     #scroll-viewport,
     #home-screen,
-    #custom-cursor {
+    #custom-cursor,
+    #top-nav {
         display: none !important;
     }
 
@@ -188,6 +189,50 @@ body {
     pointer-events: none;
     z-index: 9999;
     border-radius: 0;
+    transition: background-color 0.2s ease, border-width 0.2s ease;
+    border: 0 solid #FFFFFF;
+}
+
+/* PSEUDO-ELEMENTS FOR THE LINES
+   They exist on the cursor but are hidden by default
+*/
+#custom-cursor::before,
+#custom-cursor::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2px; /* Width of the side lines */
+    height: 2px; /* Matches cursor height */
+    background-color: #FFFFFF;
+    opacity: 0; /* Hidden by default */
+    transition: opacity 0.2s ease, left 0.3s cubic-bezier(0.16, 1, 0.3, 1), right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Default position (slightly inside or at edge) */
+#custom-cursor::before {
+    left: 0;
+}
+#custom-cursor::after {
+    right: 0;
+}
+
+/* MENU MODE (Active State)
+   1. Main cursor remains FILLED (no transparency change)
+   2. Pseudo-elements slide out and become visible
+*/
+#custom-cursor.menu-mode {
+    /* No transparency here, keep it solid white */
+}
+
+#custom-cursor.menu-mode::before {
+    opacity: 1;
+    left: -8px; /* Slide out to the left */
+}
+
+#custom-cursor.menu-mode::after {
+    opacity: 1;
+    right: -8px; /* Slide out to the right */
 }
 
 /* --- HOME SCREEN LAYER --- */
@@ -462,7 +507,7 @@ body {
     top: 0; left: 0; right: 0; bottom: 0;
     background: radial-gradient(
         circle 90px at var(--light-x) var(--light-y),
-        rgba(255, 255, 255, 0.4) 0%,
+        rgba(255, 255, 255, 0.4) 0%,\
         rgba(255, 255, 255, 0) 100%
     );
     mix-blend-mode: screen;
@@ -482,4 +527,36 @@ svg {
     display: block;
     shape-rendering: auto;
     transform: translateZ(0);
+}
+
+/* --- TOP NAVIGATION MENU --- */
+#top-nav {
+    position: fixed;
+    top: 32px;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    z-index: 50; /* Above scroll track but below custom cursor (9999) */
+    pointer-events: none; /* Initially none, enabled after animation */
+    /* Initial state controlled by GSAP, but good defaults */
+    opacity: 0;
+    visibility: hidden;
+    will-change: opacity, transform, filter;
+}
+
+#top-nav a {
+    color: #000000;
+    opacity: 0.4;
+    text-decoration: none;
+    font-family: 'Noto Sans Kannada UI', sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    pointer-events: auto;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#top-nav a:hover {
+    opacity: 1.0;
 }
