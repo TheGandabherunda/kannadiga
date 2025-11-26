@@ -161,6 +161,7 @@ function runIntroAnimation() {
     gsap.set([".welcome-text", ".enter-button"], { autoAlpha: 0, y: 50, filter: "blur(10px)" });
     gsap.set("#wreath-animation", { autoAlpha: 0, filter: "blur(10px)" }); // Set wreath initial blur
     gsap.set("#home-screen", { autoAlpha: 0 });
+    gsap.set("#scroll-instruction", { autoAlpha: 0, filter: "blur(10px)" }); // Ensure instruction is hidden
 
     // Ensure final content is hidden from flow initially
     gsap.set(".final-sequence-content", { display: "none" });
@@ -364,6 +365,15 @@ function enterSite() {
 
             // --- TRIGGER HORIZONTAL SCROLL HERE ---
             enableSmoothScroll();
+
+            // --- TRIGGER SCROLL INSTRUCTION ---
+            gsap.to("#scroll-instruction", {
+                autoAlpha: 1,
+                filter: "blur(0px)",
+                duration: 2.0,
+                delay: 0.5,
+                ease: "power2.out"
+            });
         }
     });
 
@@ -452,6 +462,9 @@ class SmoothScroll {
         this.isDragging = false;
         this.isWheeling = false;
         this.wheelTimeout = null;
+
+        // Instruction visibility flag
+        this.isInstructionHidden = false;
 
         this.startX = 0;
         this.dragStartScroll = 0;
@@ -562,7 +575,27 @@ class SmoothScroll {
             this.current = this.target;
         }
 
-        // 3. Apply Transform
+        // 3. Instruction Text Logic (Hide on Scroll)
+        // Threshold: 50 pixels scrolled
+        if (this.current > 50 && !this.isInstructionHidden) {
+            this.isInstructionHidden = true;
+            gsap.to("#scroll-instruction", {
+                autoAlpha: 0,
+                filter: "blur(10px)",
+                duration: 0.5,
+                ease: "power2.out"
+            });
+        } else if (this.current <= 50 && this.isInstructionHidden) {
+            this.isInstructionHidden = false;
+            gsap.to("#scroll-instruction", {
+                autoAlpha: 1,
+                filter: "blur(0px)",
+                duration: 0.5,
+                ease: "power2.out"
+            });
+        }
+
+        // 4. Apply Transform
         this.track.style.transform = `translate3d(${-this.current}px, 0, 0)`;
 
         this.rafId = requestAnimationFrame(() => this.animate());

@@ -290,6 +290,45 @@ body {
     color: #000000;
 }
 
+/* --- SCROLL INSTRUCTION TEXT --- */
+#scroll-instruction {
+    position: absolute;
+    right: 32px; /* Changed from left: 32px to right: 32px */
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'Noto Sans Kannada UI', sans-serif;
+    font-weight: 400; /* Regular */
+    font-size: 16px;
+    z-index: 20;
+    pointer-events: none;
+    text-align: right;
+
+    /* Shimmer / Color Logic */
+    /* Base color is approx 20%, Shimmer goes to approx 50% */
+    background: linear-gradient(
+        110deg,
+        rgba(0, 0, 0, 0.2) 35%,
+        rgba(0, 0, 0, 0.5) 50%,
+        rgba(0, 0, 0, 0.2) 65%
+    );
+    background-size: 200% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+
+    animation: shimmer 3s infinite linear;
+
+    /* Initial Hidden State */
+    opacity: 0;
+    filter: blur(10px);
+}
+
+@keyframes shimmer {
+    0% { background-position: -100% 0; }
+    100% { background-position: 100% 0; }
+}
+
+
 /* --- MAIN SEQUENCE CONTAINER --- */
 .final-sequence-content {
     position: relative;
