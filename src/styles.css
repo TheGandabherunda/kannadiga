@@ -120,7 +120,8 @@ body {
     #scroll-viewport,
     #home-screen,
     #custom-cursor,
-    #top-nav {
+    #top-nav,
+    #bottom-nav-indicator {
         display: none !important;
     }
 
@@ -558,4 +559,58 @@ svg {
 
 #top-nav a:hover {
     opacity: 1.0;
+}
+
+/* --- BOTTOM NAVIGATION INDICATOR --- */
+#bottom-nav-indicator {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    z-index: 100;
+    pointer-events: none; /* Allows clicks to pass through gaps */
+    opacity: 0; /* Hidden initially */
+    visibility: hidden;
+}
+
+#nav-label {
+    font-family: 'Noto Sans Kannada UI', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: #000;
+    opacity: 0; /* Hidden by default */
+    transform: translateY(4px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+#nav-lines {
+    display: flex;
+    align-items: flex-end; /* Grow upwards */
+    gap: 8px;
+    height: 32px; /* Fixed container height */
+    pointer-events: auto; /* Re-enable clicks on lines */
+    padding: 0 10px; /* Hitbox padding */
+}
+
+.nav-line {
+    width: 4px;
+    border-radius: 999px;
+    background-color: #000;
+    cursor: pointer;
+    /* We do NOT use CSS transitions for height/opacity here because
+       JS handles the physics-based animation loop for smoother sync */
+    will-change: height, opacity;
+}
+
+/* Hover effect on lines is handled via JS for consistency,
+   but we can add a slight brightness hover via CSS if needed */
+.nav-line:hover {
+    /* Optional auxiliary hover styles */
 }

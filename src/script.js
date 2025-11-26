@@ -251,8 +251,9 @@ function runIntroAnimation() {
     gsap.set("#home-screen", { autoAlpha: 0 });
     gsap.set("#scroll-instruction", { autoAlpha: 0, filter: "blur(10px)" }); // Ensure instruction is hidden
 
-    // Ensure Top Nav is hidden initially
+    // Ensure Top Nav & Bottom Nav are hidden initially
     gsap.set("#top-nav", { autoAlpha: 0, y: -20, filter: "blur(10px)" });
+    gsap.set("#bottom-nav-indicator", { autoAlpha: 0, y: 20, filter: "blur(10px)" });
 
     // Ensure final content is hidden from flow initially
     gsap.set(".final-sequence-content", { display: "none" });
@@ -458,7 +459,7 @@ function enterSite() {
             enableSmoothScroll();
 
              // --- SYNCED APPEARANCE ---
-             gsap.to(["#top-nav", "#scroll-instruction"], {
+             gsap.to(["#top-nav", "#scroll-instruction", "#bottom-nav-indicator"], {
                 autoAlpha: 1,
                 y: 0,
                 filter: "blur(0px)",
@@ -555,6 +556,7 @@ class SmoothScroll {
         // Interaction Flags
         this.isDragging = false;
         this.isWheeling = false;
+        this.isAutoScrolling = false; // New flag for click animation
         this.wheelTimeout = null;
 
         // Instruction visibility flag
@@ -566,15 +568,182 @@ class SmoothScroll {
 
         // Physics Params
         this.friction = 0.08; // Inertia for the actual scroll (current following target)
-        this.springFactor = 0.2; // INCREASED: Was 0.1, set to 0.2 for faster snap back
+        this.springFactor = 0.2;
         this.dragSpeed = 1.5;
-        this.elasticity = 0.2; // Resistance factor when out of bounds
+        this.elasticity = 0.2;
+
+        // Nav Logic
+        this.navLines = [];
+        this.navLabel = document.getElementById('nav-label');
+        this.navContainer = document.getElementById('nav-lines');
+        this.sections = Array.from(document.querySelectorAll('.scroll-section'));
+
+        // Tracks hover state for the Nav
+        this.navState = {
+            hoveredIndex: -1,
+            isHovering: false
+        };
 
         this.init();
+        this.initBottomNav();
     }
 
     updateDimensions() {
         this.maxScroll = this.track.scrollWidth - window.innerWidth;
+    }
+
+    // --- BOTTOM NAVIGATION LOGIC ---
+    initBottomNav() {
+        if (!this.navContainer) return;
+        this.navContainer.innerHTML = '';
+
+        this.sections.forEach((section, index) => {
+            const line = document.createElement('div');
+            line.classList.add('nav-line');
+
+            // Interaction: Mouse Enter
+            line.addEventListener('mouseenter', () => {
+                this.navState.isHovering = true;
+                this.navState.hoveredIndex = index;
+                this.updateNavLabel(index, true); // Fade in label
+            });
+
+            // Interaction: Mouse Leave
+            this.navContainer.addEventListener('mouseleave', () => {
+                 this.navState.isHovering = false;
+                 this.navState.hoveredIndex = -1;
+                 this.updateNavLabel(-1, false); // Fade out label
+            });
+
+            // Interaction: Click to Scroll
+            line.addEventListener('mousedown', (e) => {
+                // STOP PROPAGATION so the drag logic doesn't fire
+                e.stopPropagation();
+
+                // Calculate center of the target section
+                const targetX = section.offsetLeft + (section.offsetWidth / 2) - (window.innerWidth / 2);
+
+                // Clamp target
+                let clampedTarget = Math.max(0, Math.min(targetX, this.maxScroll));
+
+                // TRIGGER AUTO SCROLL ANIMATION
+                this.isAutoScrolling = true;
+
+                // Animate both target and current so physics don't fight it
+                gsap.to(this, {
+                    current: clampedTarget,
+                    target: clampedTarget,
+                    duration: 2.5, // Increased duration for smoother slow scroll
+                    ease: "expo.out",
+                    onComplete: () => {
+                        this.isAutoScrolling = false;
+                    }
+                });
+            });
+
+            this.navContainer.appendChild(line);
+            this.navLines.push(line);
+        });
+    }
+
+    updateNavLabel(index, isVisible) {
+        if (isVisible && index >= 0) {
+            const name = this.sections[index].getAttribute('data-nav-name') || "Section " + (index + 1);
+            this.navLabel.textContent = name;
+            this.navLabel.style.opacity = '1';
+            this.navLabel.style.transform = 'translateY(0)';
+        } else {
+            this.navLabel.style.opacity = '0';
+            this.navLabel.style.transform = 'translateY(4px)';
+        }
+    }
+
+    // Run every frame to animate lines
+    updateNavVisuals() {
+        const viewportCenter = window.innerWidth / 2;
+
+        this.navLines.forEach((line, index) => {
+            let targetHeight = 20;
+            let targetOpacity = 0.1;
+
+            // --- LOGIC BRANCH: HOVER vs SCROLL ---
+
+            if (this.navState.isHovering) {
+                // MOUSE INTERACTION MODE
+                const dist = Math.abs(index - this.navState.hoveredIndex);
+
+                if (dist === 0) {
+                    targetHeight = 32;
+                    targetOpacity = 1.0;
+                } else if (dist === 1) {
+                    targetHeight = 24;
+                    targetOpacity = 0.3;
+                }
+                // Others remain default
+
+            } else {
+                // SCROLL SYNC MODE
+
+                // 1. Get Geometry
+                const sectionLeft = this.sections[index].offsetLeft;
+                const sectionWidth = this.sections[index].offsetWidth;
+                const sectionCenter = sectionLeft + (sectionWidth / 2);
+
+                // 2. Calculate Distance
+                // visualCenter is where the section is on screen right now
+                const visualCenter = sectionCenter - this.current;
+
+                // absolute distance from center of screen in pixels
+                const dist = Math.abs(visualCenter - viewportCenter);
+
+                // 3. Convert to "Unit Distance" (1 unit = 1 screen width)
+                // This makes the math responsive
+                const distRatio = dist / window.innerWidth;
+
+                // 4. Gaussian Function for Organic Falloff
+                // We tune 'k' to match the specific "Neighbor = 24px" requirement
+                // k = 1.1 ensures that at distRatio = 1.0 (neighbor), result is ~0.33
+                // UPDATED: User requested neighbors (at ~0.6 distRatio for 60vw sections) to be max 24px.
+                // At distRatio 0.6, we want activation ~0.33 (which maps to 24px).
+                // exp(-k * 0.6^2) = 0.33 => -k*0.36 = -1.1 => k ≈ 3.05
+                const k = 3.0;
+                let activation = Math.exp(-k * Math.pow(distRatio, 2));
+
+                // 5. EDGE CASE HANDLING (Sticky Ends)
+                // If first section is near/past center to right, keep fully active
+                if (index === 0 && visualCenter > viewportCenter) {
+                    activation = 1.0;
+                }
+                // If last section is near/past center to left, keep fully active
+                else if (index === this.sections.length - 1 && visualCenter < viewportCenter) {
+                    activation = 1.0;
+                }
+
+                // 6. Map Activation (0 to 1) to Visual Properties
+
+                // Height: Base 20px -> Max 32px (Range 12px)
+                // Neighbor (0.33 activation) gets ~24px
+                targetHeight = 20 + (12 * activation);
+
+                // Opacity: Base 0.1 -> Max 1.0 (Range 0.9)
+                // We power the activation slightly to make opacity drop faster than height
+                // Neighbor (0.33^1.5 ≈ 0.19) -> 0.1 + (0.9 * 0.19) ≈ 0.27 (Close to 30%)
+                targetOpacity = 0.1 + (0.9 * Math.pow(activation, 1.5));
+            }
+
+            // Apply styles using simple LERP for smoothness (optional, or direct set)
+            // Since this runs in RAF, direct set is usually fine, but let's LERP for ultra smooth
+            const currentH = parseFloat(line.style.height) || 20;
+            const currentO = parseFloat(line.style.opacity) || 0.1;
+
+            const lerp = (start, end, amt) => (1 - amt) * start + amt * end;
+
+            // Higher interpolation factor for hover for snappiness, lower for scroll
+            const speed = this.navState.isHovering ? 0.2 : 0.1;
+
+            line.style.height = `${lerp(currentH, targetHeight, speed)}px`;
+            line.style.opacity = lerp(currentO, targetOpacity, speed);
+        });
     }
 
     init() {
@@ -599,8 +768,11 @@ class SmoothScroll {
     }
 
     onWheel(e) {
-        // Optional: Prevent browser navigation
-        // e.preventDefault();
+        // Stop any active auto-scroll animations immediately for responsiveness
+        if (this.isAutoScrolling) {
+            gsap.killTweensOf(this);
+            this.isAutoScrolling = false;
+        }
 
         let delta = e.deltaY;
 
@@ -621,6 +793,12 @@ class SmoothScroll {
     }
 
     onDown(e) {
+        // Stop any active auto-scroll animations immediately for responsiveness
+        if (this.isAutoScrolling) {
+            gsap.killTweensOf(this);
+            this.isAutoScrolling = false;
+        }
+
         this.isDragging = true;
         this.startX = e.clientX;
         this.dragStartScroll = this.target;
@@ -651,7 +829,7 @@ class SmoothScroll {
 
     animate() {
         // 1. Snap Target Back to Bounds if not interacting
-        if (!this.isDragging && !this.isWheeling) {
+        if (!this.isDragging && !this.isWheeling && !this.isAutoScrolling) {
              if (this.target < 0) {
                  this.target += (0 - this.target) * this.springFactor;
                  if (Math.abs(this.target) < 0.1) this.target = 0;
@@ -662,10 +840,13 @@ class SmoothScroll {
         }
 
         // 2. Interpolate Current towards Target (Momentum)
-        this.current += (this.target - this.current) * this.friction;
+        // ONLY if not auto-scrolling. If auto-scrolling, GSAP handles this.current directly.
+        if (!this.isAutoScrolling) {
+            this.current += (this.target - this.current) * this.friction;
+        }
 
         // Optimization: Snap current to target if very close (only if target is settled)
-        if (Math.abs(this.target - this.current) < 0.05 && !this.isDragging && !this.isWheeling) {
+        if (Math.abs(this.target - this.current) < 0.05 && !this.isDragging && !this.isWheeling && !this.isAutoScrolling) {
             this.current = this.target;
         }
 
@@ -689,7 +870,10 @@ class SmoothScroll {
             });
         }
 
-        // 4. Apply Transform
+        // 4. Update Bottom Navigation (Physics)
+        this.updateNavVisuals();
+
+        // 5. Apply Transform
         this.track.style.transform = `translate3d(${-this.current}px, 0, 0)`;
 
         this.rafId = requestAnimationFrame(() => this.animate());
