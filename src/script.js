@@ -85,7 +85,7 @@ const attachHoverListeners = () => {
             // We use overwrite: true to ensuring we kill any mouse-following momentum immediately
             gsap.to(cursor, {
                 width: rect.width + 12,
-                height: rect.height + 6,
+                height: rect.height + 4,
                 x: rect.left + rect.width / 2,
                 y: rect.top + rect.height / 2,
                 borderRadius: 0,

@@ -352,9 +352,9 @@ body {
     /* Base color is approx 20%, Shimmer goes to approx 50% */
     background: linear-gradient(
         110deg,
-        rgba(0, 0, 0, 0.2) 35%,
-        rgba(0, 0, 0, 0.5) 50%,
-        rgba(0, 0, 0, 0.2) 65%
+        rgba(0, 0, 0, 0.25) 35%,
+        rgba(0, 0, 0, 0.8) 50%,
+        rgba(0, 0, 0, 0.25) 65%
     );
     background-size: 200% 100%;
     background-clip: text;
@@ -538,9 +538,8 @@ svg {
     display: flex;
     justify-content: center;
     gap: 48px;
-    z-index: 50; /* Above scroll track but below custom cursor (9999) */
-    pointer-events: none; /* Initially none, enabled after animation */
-    /* Initial state controlled by GSAP, but good defaults */
+    z-index: 50;
+    pointer-events: none;
     opacity: 0;
     visibility: hidden;
     will-change: opacity, transform, filter;
@@ -548,7 +547,7 @@ svg {
 
 #top-nav a {
     color: #000000;
-    opacity: 0.4;
+    opacity: 0.25;
     text-decoration: none;
     font-family: 'Noto Sans Kannada UI', sans-serif;
     font-weight: 400;
