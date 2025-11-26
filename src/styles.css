@@ -94,7 +94,7 @@ body {
     font-family: 'Noto Sans Kannada UI', sans-serif;
     font-size: 16px;
     font-weight: 600;
-    color: #000000;
+    rgba(0, 0, 0, 0.4)
     line-height: 1.5;
 }
 
@@ -102,7 +102,7 @@ body {
     font-family: 'Inter', sans-serif;
     font-size: 16px;
     font-weight: 400;
-    color: #000000;
+    rgba(0, 0, 0, 0.4)
     line-height: 1.5;
 }
 
