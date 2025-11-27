@@ -3,7 +3,8 @@
    ========================================= */
 const trigger = document.getElementById('menu-trigger');
 const overlay = document.getElementById('menu-overlay');
-const links = document.querySelectorAll('.overlay-nav a');
+// Updated selector to include both the header div and the anchor links
+const links = document.querySelectorAll('.overlay-nav > *');
 let isMenuOpen = false;
 
 if (trigger) {
@@ -39,7 +40,7 @@ if (trigger) {
                 ease: syncEase
             }, 0); // Start at time 0 (Synced)
 
-            // 3. Links Slide In
+            // 3. Links Slide In (Now includes Header)
             tl.to(links, {
                 autoAlpha: 1,
                 y: 0,

@@ -497,22 +497,45 @@ svg {
     background-color: rgba(242, 239, 229, 0.9); /* #F2EFE5 at 90% */
     backdrop-filter: blur(10px);
     z-index: 150;
-    /* Removed center alignment to support absolute positioning of nav list */
+
+    /* --- UPDATED CENTERING LOGIC (Vertical + Horizontal) --- */
     display: flex;
+    justify-content: center; /* Centers horizontally */
+    align-items: center;     /* Centers vertically */
+    padding-top: 0;          /* Removed the 32px top spacing */
+
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
 }
 
+/* --- UPDATED NAVIGATION LAYOUT --- */
 .overlay-nav {
-    position: absolute;
-    top: 64px; /* Aligned with Icon Top */
-    right: 160px; /* 32px (Icon Right) + 32px (Icon Width) + 120px (Space) */
+    /* Position is handled by the flex parent #menu-overlay */
+    position: relative;
+
     display: flex;
     flex-direction: column;
     gap: 8px;
+    width: max-content; /* Ensure container fits text exactly */
+
+    /* Internal Text Alignment (Keep Left Aligned) */
     text-align: left;
-    align-items: flex-end; /* Ensures items are left-aligned in the column */
+    align-items: flex-start;
+
+    /* KEY FIX: Ignore mouse events on the container gaps */
+    pointer-events: none;
+}
+
+/* --- NEW HEADER STYLE --- */
+.nav-header {
+    font-family: 'Noto Sans Kannada UI', sans-serif;
+    font-size: 16px;
+    font-weight: 600; /* Semibold */
+    color: #000000;
+    margin-bottom: 8px; /* Extra spacing from items */
+    opacity: 0; /* Animated in via JS */
+    transform: translateY(20px);
 }
 
 .overlay-nav a {
@@ -523,12 +546,30 @@ svg {
     text-decoration: none;
     opacity: 0; /* Animated in via JS */
     transform: translateY(20px);
-    pointer-events: auto;
-    /* transition: opacity 0.3s ease;  <-- REMOVED TO PREVENT CONFLICT WITH GSAP */
+    /* Pointer events handled below */
 }
 
+/* --- HOVER FOCUS EFFECT --- */
+
+/* 1. Add smooth transition to ALL items (Header + Links) */
+.overlay-nav > * {
+    transition: opacity 0.4s ease;
+}
+
+/* 2. Enable pointer events ONLY on links */
+/* This ensures hovering the header does NOT trigger the dimming effect */
+.overlay-nav a {
+    pointer-events: auto;
+}
+
+/* 3. When the container is hovered (via a link), dim ALL items (including Header) to 10% */
+.overlay-nav:hover > * {
+    opacity: 0.1 !important;
+}
+
+/* 4. But keep the SPECIFIC LINK being hovered at 100% */
 .overlay-nav a:hover {
-    opacity: 0.6;
+    opacity: 1 !important;
 }
 
 /* --- BOTTOM NAVIGATION INDICATOR --- */
