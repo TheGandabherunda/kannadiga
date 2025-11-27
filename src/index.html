@@ -7,70 +7,47 @@
 
     <!-- Favicon & Theme Configuration -->
     <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
-    <!-- Safari Pinned Tab Icon Color -->
     <link rel="mask-icon" href="assets/logo.svg" color="#FF0000">
-    <!-- Mobile Browser Toolbar Color (Updated to Interaction Red) -->
     <meta name="theme-color" content="#FF0000">
 
-    <!-- Google Fonts -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;1,400&family=Noto+Serif+Kannada:wght@600&display=swap" rel="stylesheet">
 
-    <!-- Tailwind CSS -->
+    <!-- Tailwind & GSAP -->
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- GSAP Animation Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-
-    <!-- Lottie Animation Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
 
     <!-- External CSS -->
     <link rel="stylesheet" href="styles.css">
 
-    <!-- Prevent FOUC & Performance Hints -->
     <style>
-        .loading-text-left,
-        .bottom-text,
-        .loading-text-right,
-        .welcome-text,
-        .enter-button,
-        #wreath-animation,
-        #home-screen,
-        .def-group,
-        #scroll-instruction,
-        #menu-trigger,
-        #bottom-nav-indicator {
-            visibility: hidden; /* GSAP handles visibility */
+        .loading-text-left, .bottom-text, .loading-text-right, .welcome-text,
+        .enter-button, #wreath-animation, #home-screen, .def-group,
+        #scroll-instruction, #menu-trigger, #bottom-nav-indicator {
+            visibility: hidden;
             will-change: transform, opacity, filter;
         }
-
         body {
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            overscroll-behavior: none; /* Prevents browser back swipe */
+            overscroll-behavior: none;
         }
     </style>
 </head>
 <body>
 
-<!-- MOBILE/TABLET WARNING SCREEN -->
+<!-- MOBILE WARNING -->
 <div id="mobile-warning">
-    <div class="logo-wrapper" id="mobileLogoWrapper">
-        <!-- SVG injected here by JS -->
-    </div>
+    <div class="logo-wrapper" id="mobileLogoWrapper"></div>
     <div class="warning-text-group">
-        <div class="warning-text-kannada">
-            ಉತ್ತಮ ಅನುಭವಕ್ಕಾಗಿ <br> ಡೆಸ್ಕ್‌ಟಾಪ್ / ಮೇಜು ಗಣಕ ಬಳಸಿ.
-        </div>
-        <div class="warning-text-english">
-            Use desktop for better experience.
-        </div>
+        <div class="warning-text-kannada">ಉತ್ತಮ ಅನುಭವಕ್ಕಾಗಿ <br> ಡೆಸ್ಕ್‌ಟಾಪ್ / ಮೇಜು ಗಣಕ ಬಳಸಿ.</div>
+        <div class="warning-text-english">Use desktop for better experience.</div>
     </div>
 </div>
 
-<!-- MENU TRIGGER (NEW) -->
+<!-- MENU TRIGGER -->
 <div id="menu-trigger">
     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -78,66 +55,91 @@
     </svg>
 </div>
 
-<!-- MENU OVERLAY (NEW) -->
+<!-- MENU OVERLAY -->
 <div id="menu-overlay">
     <nav class="overlay-nav">
-        <!-- Added Content Header -->
         <div class="nav-header">ಪರಿವಿಡಿ</div>
-        <a href="#">ಕಲೆ</a>
-        <a href="#">ವ್ಯಕ್ತಿ ವಿಶೇಷ</a>
-        <a href="#">ಸಂಸ್ಕೃತಿ - ಹಬ್ಬ</a>
-        <a href="#">ಕತೆಗಳು</a>
-        <a href="#">ಸಾಹಿತ್ಯ</a>
-        <a href="#">ಸ್ಥಳಗಳು</a>
-        <a href="#">ನಮ್ಮ ಬಗ್ಗೆ</a>
+
+        <!-- Item 1: Art -->
+        <a href="#">
+            <span class="reveal-text left-side">ಕರ್ನಾಟಕದ ಶ್ರೀಮಂತ</span>
+            <span class="base-text">ಕಲೆ</span>
+            <span class="reveal-text right-side">ಇಲ್ಲಿದೆ</span>
+            <span class="arrow-icon">↗</span>
+        </a>
+
+        <!-- Item 2: Personalities -->
+        <a href="#">
+            <span class="reveal-text left-side">ಕರ್ನಾಟಕದ ಸಾಧಕರ</span>
+            <span class="base-text">ವ್ಯಕ್ತಿ ವಿಶೇಷ</span>
+            <span class="reveal-text right-side">ಓದಿ</span>
+            <span class="arrow-icon">↗</span>
+        </a>
+
+        <!-- Item 3: Culture -->
+        <a href="#">
+            <span class="reveal-text left-side">ಕರ್ನಾಟಕದ ಆಚರಣೆ ಮತ್ತು</span>
+            <span class="base-text">ಸಂಸ್ಕೃತಿ - ಹಬ್ಬ</span>
+            <span class="reveal-text right-side">ಗಳ ಬಗ್ಗೆ ತಿಳಿಯಿರಿ</span> <!-- Empty right side -->
+            <span class="arrow-icon">↗</span>
+        </a>
+
+        <!-- Item 4: Stories -->
+        <a href="#">
+            <span class="reveal-text left-side">ಕರ್ನಾಟಕದ ಜನಪದ</span>
+            <span class="base-text">ಕತೆಗಳು</span>
+            <span class="reveal-text right-side">ಇಲ್ಲಿವೆ</span>
+            <span class="arrow-icon">↗</span>
+        </a>
+
+        <!-- Item 5: Literature -->
+        <a href="#">
+            <span class="reveal-text left-side">ಕರ್ನಾಟಕದ ಶ್ರೇಷ್ಠ ಕವಿಗಳ</span>
+            <span class="base-text">ಸಾಹಿತ್ಯ</span>
+            <span class="reveal-text right-side">ತಿಳಿಯಿರಿ</span>
+            <span class="arrow-icon">↗</span>
+        </a>
+
+        <!-- Item 6: Places -->
+        <a href="#">
+            <span class="reveal-text left-side">ಕರ್ನಾಟಕದ ಪ್ರವಾಸಿ</span>
+            <span class="base-text">ಸ್ಥಳಗಳು</span>
+            <span class="reveal-text right-side">ನೋಡಿ</span>
+            <span class="arrow-icon">↗</span>
+        </a>
+
+        <!-- Item 7: About Us -->
+        <a href="#">
+            <span class="reveal-text left-side"></span>
+            <span class="base-text">ನಮ್ಮ ಬಗ್ಗೆ</span>
+            <span class="reveal-text right-side">ತಿಳಿಯಿರಿ</span>
+            <span class="arrow-icon">↗</span>
+        </a>
     </nav>
 </div>
 
-<!-- BOTTOM NAVIGATION INDICATOR -->
+<!-- BOTTOM NAV -->
 <div id="bottom-nav-indicator">
     <div id="nav-label">Section Name</div>
-    <div id="nav-lines">
-        <!-- Lines dynamically generated by JS -->
-    </div>
+    <div id="nav-lines"></div>
 </div>
 
-<!-- HOME SCREEN LAYER -->
+<!-- HOME SCREEN -->
 <div id="home-screen"></div>
 
-<!-- SCROLL VIEWPORT (Masks the content) -->
+<!-- SCROLL VIEWPORT -->
 <div id="scroll-viewport">
-    <!-- SCROLL TRACK (Moves horizontally) -->
     <div id="scroll-track">
-
-        <!-- SECTION 1: MAIN HOME CONTENT (Original) -->
         <div class="scroll-section home-section" data-nav-name="ಕನ್ನಡಿಗ">
-
-            <!-- LEFT TEXT (Original Position) -->
             <div class="loading-text-left">ಸಿರಿಗನ್ನಡಂ ಗೆಲ್ಗೆ &nbsp; • &nbsp; ಸಿರಿಗನ್ನಡಂ ಬಾಳ್ಗೆ</div>
-
-            <!-- SCROLL INSTRUCTION TEXT -->
             <div id="scroll-instruction">ಸ್ಕ್ರಾಲ್ ಮಾಡಿ</div>
-
-            <!-- CENTER: Logo Container -->
             <div class="container" id="interaction-container">
-                <!-- Wreath Animation Container -->
                 <div id="wreath-animation"></div>
-
-                <!-- NEW WRAPPER: Groups Logo and Below Texts together -->
                 <div class="main-content-wrapper">
-
-                    <div class="logo-wrapper" id="logoWrapper">
-                        <!-- SVG injected here by JS -->
-                    </div>
-
-                    <!-- MAIN SEQUENCE CONTENT -->
+                    <div class="logo-wrapper" id="logoWrapper"></div>
                     <div class="final-sequence-content">
-                        <!-- Text Wrapper: Shrinks to fit Title, used for alignment -->
                         <div class="text-anchor">
-                            <!-- This text transforms into the Title -->
                             <div class="welcome-text">ನಿಮಗೆ<br>ಆತ್ಮೀಯ ಸ್ವಾಗತ.</div>
-
-                            <!-- Dictionary Elements (Absolute positioned relative to anchor) -->
                             <div class="def-group">
                                 <div class="def-phonetic">♪ kannaḍiga</div>
                                 <div class="def-noun">noun</div>
@@ -145,56 +147,24 @@
                                 <div class="def-desc">a man belonging to Karnāṭaka.</div>
                             </div>
                         </div>
-
-                        <!-- Button (Disappears on click) -->
                         <button class="enter-button" onclick="enterSite()">ಪ್ರವೇಶಿಸಿ</button>
                     </div>
-
                 </div>
             </div>
-
-            <!-- BOTTOM TEXT -->
             <div class="bottom-text" id="loadingCounter">೦೦</div>
-
-            <!-- RIGHT TEXT -->
             <div class="loading-text-right">ಕನ್ನಡಿಗ</div>
-
         </div>
-
-        <!-- SECTION 2: Placeholder (For scroll testing) -->
-        <div class="scroll-section placeholder-section" data-nav-name="ಇತಿಹಾಸ">
-            <h2 class="text-4xl font-bold opacity-20">ಇತಿಹಾಸ</h2>
-        </div>
-
-        <!-- SECTION 3: Placeholder (For scroll testing) -->
-        <div class="scroll-section placeholder-section" data-nav-name="ಸಾಹಿತ್ಯ">
-            <h2 class="text-4xl font-bold opacity-20">ಸಾಹಿತ್ಯ</h2>
-        </div>
-
-        <div class="scroll-section placeholder-section" data-nav-name="ಕಲ">
-            <h2 class="text-4xl font-bold opacity-20">ಕಲೆ</h2>
-        </div>
-
-        <div class="scroll-section placeholder-section" data-nav-name="ಹಬ್ಬಗಳು">
-            <h2 class="text-4xl font-bold opacity-20">ಹಬ್ಬಗಳು</h2>
-        </div>
-
-        <div class="scroll-section placeholder-section" data-nav-name="ವ್ಯಕ್ತಿ ವಿಶೇಷ">
-            <h2 class="text-4xl font-bold opacity-20">ವ್ಯಕ್ತಿ ವಿಶೇಷ</h2>
-        </div>
-
-        <div class="scroll-section placeholder-section" data-nav-name="ಸ್ಥಳಗಳು">
-            <h2 class="text-4xl font-bold opacity-20">ಸ್ಥಳಗಳು</h2>
-        </div>
-
-        <div class="scroll-section placeholder-section" data-nav-name="ನಮ್ಮ ಬಗ್ಗೆ">
-            <h2 class="text-4xl font-bold opacity-20">ನಮ್ಮ ಬಗ್ಗೆ</h2>
-        </div>
-
+        <!-- Placeholders -->
+        <div class="scroll-section placeholder-section" data-nav-name="ಇತಿಹಾಸ"><h2 class="text-4xl font-bold opacity-20">ಇತಿಹಾಸ</h2></div>
+        <div class="scroll-section placeholder-section" data-nav-name="ಸಾಹಿತ್ಯ"><h2 class="text-4xl font-bold opacity-20">ಸಾಹಿತ್ಯ</h2></div>
+        <div class="scroll-section placeholder-section" data-nav-name="ಕಲೆ"><h2 class="text-4xl font-bold opacity-20">ಕಲೆ</h2></div>
+        <div class="scroll-section placeholder-section" data-nav-name="ಹಬ್ಬಗಳು"><h2 class="text-4xl font-bold opacity-20">ಹಬ್ಬಗಳು</h2></div>
+        <div class="scroll-section placeholder-section" data-nav-name="ವ್ಯಕ್ತಿ ವಿಶೇಷ"><h2 class="text-4xl font-bold opacity-20">ವ್ಯಕ್ತಿ ವಿಶೇಷ</h2></div>
+        <div class="scroll-section placeholder-section" data-nav-name="ಸ್ಥಳಗಳು"><h2 class="text-4xl font-bold opacity-20">ಸ್ಥಳಗಳು</h2></div>
+        <div class="scroll-section placeholder-section" data-nav-name="ನಮ್ಮ ಬಗ್ಗೆ"><h2 class="text-4xl font-bold opacity-20">ನಮ್ಮ ಬಗ್ಗೆ</h2></div>
     </div>
 </div>
 
-<!-- External Script -->
 <script src="script.js"></script>
 </body>
 </html>

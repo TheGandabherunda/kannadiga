@@ -498,32 +498,33 @@ svg {
     backdrop-filter: blur(10px);
     z-index: 150;
 
-    /* --- UPDATED CENTERING LOGIC (Vertical + Horizontal) --- */
+    /* --- CENTERED LAYOUT (Both Vertical & Horizontal) --- */
     display: flex;
-    justify-content: center; /* Centers horizontally */
-    align-items: center;     /* Centers vertically */
-    padding-top: 0;          /* Removed the 32px top spacing */
+    justify-content: center; /* Horizontal Center */
+    align-items: center;     /* Vertical Center */
+    padding-top: 0;
 
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
 }
 
-/* --- UPDATED NAVIGATION LAYOUT --- */
+/* --- NAVIGATION CONTAINER --- */
 .overlay-nav {
-    /* Position is handled by the flex parent #menu-overlay */
+    /* Layout */
     position: relative;
-
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    width: max-content; /* Ensure container fits text exactly */
+    gap: 12px;
 
-    /* Internal Text Alignment (Keep Left Aligned) */
-    text-align: left;
-    align-items: flex-start;
+    /* Left Align Items (Flex Start) */
+    align-items: flex-start; /* Changed from center */
 
-    /* KEY FIX: Ignore mouse events on the container gaps */
+    /* Removed min-width to allow tight wrapping around text */
+    width: max-content; /* Changed from 100% to hug content for centering */
+
+    /* Internal Text Alignment */
+    text-align: left; /* Changed from center */
     pointer-events: none;
 }
 
@@ -536,17 +537,30 @@ svg {
     margin-bottom: 8px; /* Extra spacing from items */
     opacity: 0; /* Animated in via JS */
     transform: translateY(20px);
+    width: 100%; /* Ensure header takes full width */
+    text-align: left; /* Explicitly align header text */
 }
 
+/* --- MENU LINKS STYLING --- */
 .overlay-nav a {
     font-family: 'Noto Sans Kannada UI', sans-serif;
-    font-size: 16px; /* Changed from 32px to 16px */
-    font-weight: 400;
+    font-size: 16px;
     color: #000;
     text-decoration: none;
     opacity: 0; /* Animated in via JS */
     transform: translateY(20px);
-    /* Pointer events handled below */
+
+    /* Layout: Left align the content */
+    position: relative;
+    display: flex;
+    justify-content: flex-start; /* Changed from center */
+    align-items: center;
+
+    /* Width: let it fit content */
+    width: 100%; /* Ensure link takes full width of container */
+
+    /* Interaction */
+    pointer-events: auto;
 }
 
 /* --- HOVER FOCUS EFFECT --- */
@@ -556,21 +570,94 @@ svg {
     transition: opacity 0.4s ease;
 }
 
-/* 2. Enable pointer events ONLY on links */
-/* This ensures hovering the header does NOT trigger the dimming effect */
-.overlay-nav a {
-    pointer-events: auto;
-}
-
-/* 3. When the container is hovered (via a link), dim ALL items (including Header) to 10% */
+/* 2. Dim ALL items when container is hovered */
 .overlay-nav:hover > * {
     opacity: 0.1 !important;
 }
 
-/* 4. But keep the SPECIFIC LINK being hovered at 100% */
+/* 3. Keep SPECIFIC LINK being hovered at 100% */
 .overlay-nav a:hover {
     opacity: 1 !important;
 }
+
+
+/* --- INTERACTIVE TEXT EXPANSION (CENTERED ANCHOR) --- */
+
+/* Base Text (Static) */
+.base-text {
+    font-weight: 400;
+    /* No font-weight change on hover */
+    white-space: nowrap;
+}
+
+/* Reveal Text Base Style */
+.reveal-text {
+    position: absolute;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    font-weight: 300;
+    color: #444;
+    /* Changed transition to only Opacity (No movement) */
+    transition: opacity 0.3s ease;
+}
+
+/* LEFT SIDE TEXT */
+.reveal-text.left-side {
+    /* Anchor to the LEFT edge of the CENTERED menu item */
+    right: 100%;
+    margin-right: 24px;
+
+    /* Text flows to the left */
+    width: 400px;
+    text-align: left;
+
+    /* REMOVED: transform: translateX(20px); */
+}
+
+/* RIGHT SIDE TEXT */
+.reveal-text.right-side {
+    /* Anchor to the RIGHT edge of the CENTERED menu item */
+    left: 100%;
+    margin-left: 24px;
+
+    /* Text flows to the right */
+    width: 400px;
+    text-align: right;
+
+    /* REMOVED: transform: translateX(-20px); */
+}
+
+/* ARROW ICON */
+.arrow-icon {
+    position: absolute;
+    left: 100%; /* Start at right edge of menu item */
+
+    /* Position after the Right Text block (24px gap + 400px width + 12px gap) */
+    margin-left: 436px;
+
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    opacity: 0;
+
+    /* REMOVED: transform: translateX(-10px) rotate(45deg); */
+    /* Keeping it static without rotation or slide */
+
+    transition: opacity 0.3s ease;
+}
+
+/* --- HOVER STATES FOR EXPANSION --- */
+
+.overlay-nav a:hover .reveal-text {
+    opacity: 1;
+    /* REMOVED: transform: translateX(0); */
+}
+
+.overlay-nav a:hover .arrow-icon {
+    opacity: 1;
+    /* REMOVED: transform: translateX(0) rotate(45deg); */
+}
+
 
 /* --- BOTTOM NAVIGATION INDICATOR --- */
 #bottom-nav-indicator {
