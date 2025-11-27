@@ -28,7 +28,6 @@
 
 /* --- GLOBAL RESET --- */
 * {
-    cursor: none !important;
     box-sizing: border-box;
     user-select: none; /* Improves dragging experience */
 }
@@ -94,7 +93,7 @@ body {
     font-family: 'Noto Sans Kannada UI', sans-serif;
     font-size: 16px;
     font-weight: 600;
-    rgba(0, 0, 0, 0.4)
+    color: rgba(0, 0, 0, 0.4);
     line-height: 1.5;
 }
 
@@ -102,7 +101,7 @@ body {
     font-family: 'Inter', sans-serif;
     font-size: 16px;
     font-weight: 400;
-    rgba(0, 0, 0, 0.4)
+    color: rgba(0, 0, 0, 0.4);
     line-height: 1.5;
 }
 
@@ -119,15 +118,9 @@ body {
 @media (max-width: 1024px) {
     #scroll-viewport,
     #home-screen,
-    #custom-cursor,
-    #top-nav,
+    #menu-trigger,
     #bottom-nav-indicator {
         display: none !important;
-    }
-
-    /* Ensure native cursor is visible on mobile warning */
-    * {
-        cursor: auto !important;
     }
 }
 
@@ -176,64 +169,6 @@ body {
     align-items: center;
     border-left: 1px dashed rgba(0,0,0,0.1);
     color: #000;
-}
-
-/* --- CUSTOM CURSOR --- */
-#custom-cursor {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 14px;
-    height: 14px;
-    background-color: #FFFFFF;
-    mix-blend-mode: difference;
-    pointer-events: none;
-    z-index: 9999;
-    border-radius: 0;
-    transition: background-color 0.2s ease, border-width 0.2s ease;
-    border: 0 solid #FFFFFF;
-}
-
-/* PSEUDO-ELEMENTS FOR THE LINES
-   They exist on the cursor but are hidden by default
-*/
-#custom-cursor::before,
-#custom-cursor::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 2px; /* Width of the side lines */
-    height: 2px; /* Matches cursor height */
-    background-color: #FFFFFF;
-    opacity: 0; /* Hidden by default */
-    transition: opacity 0.2s ease, left 0.3s cubic-bezier(0.16, 1, 0.3, 1), right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* Default position (slightly inside or at edge) */
-#custom-cursor::before {
-    left: 0;
-}
-#custom-cursor::after {
-    right: 0;
-}
-
-/* MENU MODE (Active State)
-   1. Main cursor remains FILLED (no transparency change)
-   2. Pseudo-elements slide out and become visible
-*/
-#custom-cursor.menu-mode {
-    /* No transparency here, keep it solid white */
-}
-
-#custom-cursor.menu-mode::before {
-    opacity: 1;
-    left: -8px; /* Slide out to the left */
-}
-
-#custom-cursor.menu-mode::after {
-    opacity: 1;
-    right: -8px; /* Slide out to the right */
 }
 
 /* --- HOME SCREEN LAYER --- */
@@ -307,9 +242,9 @@ body {
     top: 50%;
     z-index: 10;
     font-family: 'Noto Sans Kannada UI', sans-serif;
-    font-size: 20px;
-    font-weight: 600;
-    color: rgba(0, 0, 0, 0.3);
+    font-size: 16px;
+    font-weight: 400;
+    color: rgba(0, 0, 0, 1.0);
 }
 
 .loading-text-right {
@@ -318,9 +253,9 @@ body {
     top: 50%;
     z-index: 10;
     font-family: 'Noto Sans Kannada UI', sans-serif;
-    font-size: 20px;
-    font-weight: 600;
-    color: rgba(0, 0, 0, 0.3);
+    font-size: 16px;
+    font-weight: 400;
+    color: rgba(0, 0, 0, 1.0);
     font-variant-numeric: tabular-nums;
 }
 
@@ -530,35 +465,70 @@ svg {
     transform: translateZ(0);
 }
 
-/* --- TOP NAVIGATION MENU --- */
-#top-nav {
+/* --- MENU TRIGGER & OVERLAY --- */
+#menu-trigger {
     position: fixed;
     top: 32px;
-    left: 0;
-    width: 100%;
+    right: 32px;
+    z-index: 200;
+    width: 24px; /* Reduced from 40px */
+    height: 24px; /* Reduced from 40px */
     display: flex;
     justify-content: center;
-    gap: 48px;
-    z-index: 50;
-    pointer-events: none;
+    align-items: center;
+    cursor: pointer;
+    color: #000000;
+    pointer-events: auto;
     opacity: 0;
     visibility: hidden;
-    will-change: opacity, transform, filter;
 }
 
-#top-nav a {
-    color: #000000;
-    opacity: 0.25;
-    text-decoration: none;
+#menu-trigger svg {
+    width: 20px; /* Reduced from 32px */
+    height: 20px; /* Reduced from 32px */
+}
+
+#menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(242, 239, 229, 0.9); /* #F2EFE5 at 90% */
+    backdrop-filter: blur(10px);
+    z-index: 150;
+    /* Removed center alignment to support absolute positioning of nav list */
+    display: flex;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.overlay-nav {
+    position: absolute;
+    top: 64px; /* Aligned with Icon Top */
+    right: 160px; /* 32px (Icon Right) + 32px (Icon Width) + 120px (Space) */
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: left;
+    align-items: flex-end; /* Ensures items are left-aligned in the column */
+}
+
+.overlay-nav a {
     font-family: 'Noto Sans Kannada UI', sans-serif;
+    font-size: 16px; /* Changed from 32px to 16px */
     font-weight: 400;
-    font-size: 16px;
+    color: #000;
+    text-decoration: none;
+    opacity: 0; /* Animated in via JS */
+    transform: translateY(20px);
     pointer-events: auto;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    /* transition: opacity 0.3s ease;  <-- REMOVED TO PREVENT CONFLICT WITH GSAP */
 }
 
-#top-nav a:hover {
-    opacity: 1.0;
+.overlay-nav a:hover {
+    opacity: 0.6;
 }
 
 /* --- BOTTOM NAVIGATION INDICATOR --- */
@@ -584,7 +554,7 @@ svg {
     color: rgba(0, 0, 0, 0.2);
     opacity: 0; /* Hidden by default */
     transform: translateY(4px);
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    /* transition: opacity 0.3s ease, transform 0.3s ease; <-- REMOVED FOR JS CONTROL */
     pointer-events: none;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -593,7 +563,7 @@ svg {
 #nav-lines {
     display: flex;
     align-items: flex-end; /* Grow upwards */
-    gap: 8px;
+    gap: 10px;
     height: 32px; /* Fixed container height */
     pointer-events: auto; /* Re-enable clicks on lines */
     padding: 0 10px; /* Hitbox padding */

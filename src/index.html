@@ -40,7 +40,7 @@
         #home-screen,
         .def-group,
         #scroll-instruction,
-        #top-nav,
+        #menu-trigger,
         #bottom-nav-indicator {
             visibility: hidden; /* GSAP handles visibility */
             will-change: transform, opacity, filter;
@@ -70,21 +70,28 @@
     </div>
 </div>
 
-<!-- Custom Cursor Element -->
-<div id="custom-cursor"></div>
+<!-- MENU TRIGGER (NEW) -->
+<div id="menu-trigger">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+    </svg>
+</div>
 
-<!-- NAVIGATION MENU -->
-<nav id="top-nav">
-    <a href="#">ಕಲೆ</a>
-    <a href="#">ವ್ಯಕ್ತಿ ವಿಶೇಷ</a>
-    <a href="#">ಸಂಸ್ಕೃತಿ - ಹಬ್ಬ</a>
-    <a href="#">ಕತೆಗಳು</a>
-    <a href="#">ಸಾಹಿತ್ಯ</a>
-    <a href="#">ಸ್ಥಳಗಳು</a>
-    <a href="#">ನಮ್ಮ ಬಗ್ಗೆ</a>
-</nav>
+<!-- MENU OVERLAY (NEW) -->
+<div id="menu-overlay">
+    <nav class="overlay-nav">
+        <a href="#">ಕಲೆ</a>
+        <a href="#">ವ್ಯಕ್ತಿ ವಿಶೇಷ</a>
+        <a href="#">ಸಂಸ್ಕೃತಿ - ಹಬ್ಬ</a>
+        <a href="#">ಕತೆಗಳು</a>
+        <a href="#">ಸಾಹಿತ್ಯ</a>
+        <a href="#">ಸ್ಥಳಗಳು</a>
+        <a href="#">ನಮ್ಮ ಬಗ್ಗೆ</a>
+    </nav>
+</div>
 
-<!-- BOTTOM NAVIGATION INDICATOR (NEW) -->
+<!-- BOTTOM NAVIGATION INDICATOR -->
 <div id="bottom-nav-indicator">
     <div id="nav-label">Section Name</div>
     <div id="nav-lines">

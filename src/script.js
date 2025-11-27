@@ -1,149 +1,88 @@
 /* =========================================
-   CUSTOM CURSOR LOGIC
+   MENU OVERLAY LOGIC (NEW)
    ========================================= */
-const cursor = document.getElementById('custom-cursor');
-const container = document.querySelector('.container');
-const logoWrapper = document.getElementById('logoWrapper');
+const trigger = document.getElementById('menu-trigger');
+const overlay = document.getElementById('menu-overlay');
+const links = document.querySelectorAll('.overlay-nav a');
+let isMenuOpen = false;
 
-// --- 1. MOVEMENT ---
-// Track mouse position globally
-let lastMouseX = window.innerWidth / 2;
-let lastMouseY = window.innerHeight / 2;
+if (trigger) {
+    trigger.addEventListener('click', () => {
+        isMenuOpen = !isMenuOpen;
 
-// Initial set
-gsap.set(cursor, { xPercent: -50, yPercent: -50, x: lastMouseX, y: lastMouseY });
+        // Increased duration for a more luxurious, smooth feel
+        const animDuration = 0.85;
+        // Changed from expo (sharp) to power3 (silky/smooth)
+        const syncEase = "power3.inOut";
 
-window.addEventListener('mousemove', (e) => {
-    lastMouseX = e.clientX;
-    lastMouseY = e.clientY;
+        // Kill any running animations to prevent conflicts if clicked rapidly
+        gsap.killTweensOf([overlay, links, '#menu-trigger svg']);
 
-    // Only update position if NOT hovering a menu item
-    if (!isMenuHover) {
-        // We use gsap.to instead of quickTo for better compatibility with the snap animations
-        gsap.to(cursor, {
-            x: e.clientX,
-            y: e.clientY,
-            duration: 0.15,
-            ease: "power3.out",
-            overwrite: "auto" // Only overwrite x/y, leave width/height alone if possible
-        });
-    }
-});
+        if (isMenuOpen) {
+            // --- OPEN SEQUENCE (TIMELINE) ---
+            const tl = gsap.timeline();
 
-// --- 2. STATE MANAGEMENT ---
-let isTextHover = false;
-let isMenuHover = false;
-let currentTextHeight = 0;
+            overlay.style.pointerEvents = 'auto';
 
-const textSelectors = '.loading-text-left, .loading-text-right, .bottom-text, .welcome-text, p, h1, h2, h3, h4, h5, h6, span, .def-phonetic, .def-noun, .def-desc';
-const menuSelectors = '#top-nav a';
+            // 1. Overlay Fade In
+            tl.to(overlay, {
+                autoAlpha: 1,
+                duration: animDuration,
+                ease: syncEase
+            }, 0); // Start at time 0
 
-const attachHoverListeners = () => {
-    // Generic Text Hover (Bar Cursor)
-    document.querySelectorAll(textSelectors).forEach(el => {
-        if(el.dataset.cursorAttached) return;
-        el.dataset.cursorAttached = "true";
-        el.addEventListener('mouseenter', () => {
-            isTextHover = true;
-            const style = window.getComputedStyle(el);
-            const fontSize = parseFloat(style.fontSize);
-            currentTextHeight = fontSize;
+            // 2. Icon Rotation (+ to x)
+            // Using same ease as links to stay perfectly in sync
+            tl.to('#menu-trigger svg', {
+                rotation: 45,
+                duration: animDuration,
+                ease: syncEase
+            }, 0); // Start at time 0 (Synced)
 
-            gsap.to(cursor, {
-                width: 2,
-                height: fontSize,
-                duration: 0.3,
-                ease: "power3.out",
-                overwrite: "auto"
-            });
-        });
-        el.addEventListener('mouseleave', () => {
-            isTextHover = false;
-            if(!isMenuHover) {
-                gsap.to(cursor, {
-                    width: 14,
-                    height: 14,
-                    duration: 0.3,
-                    ease: "power3.out",
-                    overwrite: "auto"
-                });
-            }
-        });
+            // 3. Links Slide In
+            tl.to(links, {
+                autoAlpha: 1,
+                y: 0,
+                // Slightly looser stagger for a fluid wave effect
+                stagger: 0.05,
+                duration: animDuration,
+                ease: syncEase
+            }, 0); // Start at time 0 (Synced)
+
+        } else {
+            // --- CLOSE SEQUENCE (TIMELINE) ---
+            const tl = gsap.timeline();
+
+            // 1. Links Slide Out (Reverse Stagger)
+            tl.to(links, {
+                autoAlpha: 0,
+                y: 20, // Move back down to original position
+                stagger: {
+                    each: 0.05,
+                    from: "end" // Bottom to top
+                },
+                duration: animDuration,
+                ease: syncEase
+            }, 0); // Start at time 0
+
+            // 2. Icon Rotation Back (x to +)
+            tl.to('#menu-trigger svg', {
+                rotation: 0,
+                duration: animDuration,
+                ease: syncEase
+            }, 0); // Start at time 0
+
+            // 3. Overlay Fade Out
+            tl.to(overlay, {
+                autoAlpha: 0,
+                duration: animDuration,
+                ease: syncEase
+            }, 0); // Start at time 0
+
+            overlay.style.pointerEvents = 'none';
+        }
     });
-
-    // Menu Item Hover (Magnetic Background Fill + Brackets)
-    document.querySelectorAll(menuSelectors).forEach(el => {
-        if(el.dataset.cursorAttached) return;
-        el.dataset.cursorAttached = "true";
-        el.addEventListener('mouseenter', () => {
-            isMenuHover = true;
-            cursor.classList.add('menu-mode'); // Trigger visual change (brackets)
-
-            const rect = el.getBoundingClientRect();
-
-            // SNAP TO MENU ITEM
-            // We use overwrite: true to ensuring we kill any mouse-following momentum immediately
-            gsap.to(cursor, {
-                width: rect.width + 12,
-                height: rect.height + 4,
-                x: rect.left + rect.width / 2,
-                y: rect.top + rect.height / 2,
-                borderRadius: 0,
-                duration: 0.4,
-                ease: "power3.out",
-                overwrite: true
-            });
-        });
-
-        el.addEventListener('mouseleave', () => {
-            isMenuHover = false;
-            cursor.classList.remove('menu-mode'); // Revert visual change
-
-            // 1. Reset SHAPE (Size)
-            gsap.to(cursor, {
-                width: 14,
-                height: 14,
-                borderRadius: 0,
-                duration: 0.3,
-                ease: "power2.out",
-                overwrite: "auto"
-            });
-
-            // 2. Reset POSITION (Return to Mouse)
-            // We explicitly fire this to bridge the gap between mouseleave and the next mousemove
-            gsap.to(cursor, {
-                x: lastMouseX,
-                y: lastMouseY,
-                duration: 0.15,
-                ease: "power3.out",
-                overwrite: "auto"
-            });
-        });
-    });
-};
-
-attachHoverListeners();
-
-// --- 3. CLICK INTERACTION ---
-window.addEventListener('mousedown', () => {
-    if (isTextHover) {
-        gsap.to(cursor, { height: currentTextHeight - 2, duration: 0.15, ease: "power2.out", overwrite: "auto" });
-    } else if (isMenuHover) {
-        gsap.to(cursor, { scale: 0.9, duration: 0.15, ease: "power2.out", overwrite: "auto" });
-    } else {
-        gsap.to(cursor, { width: 12, height: 12, duration: 0.15, ease: "power2.out", overwrite: "auto" });
-    }
-});
-
-window.addEventListener('mouseup', () => {
-    if (isTextHover) {
-        gsap.to(cursor, { height: currentTextHeight, duration: 0.15, ease: "power2.out", overwrite: "auto" });
-    } else if (isMenuHover) {
-        gsap.to(cursor, { scale: 1.0, duration: 0.15, ease: "power2.out", overwrite: "auto" });
-    } else {
-        gsap.to(cursor, { width: 14, height: 14, duration: 0.15, ease: "power2.out", overwrite: "auto" });
-    }
-});
+}
 
 
 /* =========================================
@@ -154,6 +93,7 @@ window.initSVGLights = function() {
     const diffuseSource = document.getElementById('diffuse-source');
     const shadowFilter = document.getElementById('dynamic-shadow');
     const specularElement = document.getElementById('specular-element');
+    const logoWrapper = document.getElementById('logoWrapper');
 
     const vbWidth = 72;
     const vbHeight = 97;
@@ -270,12 +210,12 @@ function runIntroAnimation() {
     gsap.set([".loading-text-left", ".loading-text-right"], { yPercent: -50 });
     gsap.set(kannadaElement, { xPercent: -50, autoAlpha: 0, y: 50, filter: "blur(10px)" });
     gsap.set([".welcome-text", ".enter-button"], { autoAlpha: 0, y: 50, filter: "blur(10px)" });
-    gsap.set("#wreath-animation", { autoAlpha: 0, filter: "blur(10px)" }); // Set wreath initial blur
+    gsap.set("#wreath-animation", { autoAlpha: 0, filter: "blur(10px)" });
     gsap.set("#home-screen", { autoAlpha: 0 });
-    gsap.set("#scroll-instruction", { autoAlpha: 0, filter: "blur(10px)" }); // Ensure instruction is hidden
+    gsap.set("#scroll-instruction", { autoAlpha: 0, filter: "blur(10px)" });
 
-    // Ensure Top Nav & Bottom Nav are hidden initially
-    gsap.set("#top-nav", { autoAlpha: 0, y: -20, filter: "blur(10px)" });
+    // Ensure Top Nav (now just the trigger) & Bottom Nav are hidden initially
+    gsap.set("#menu-trigger", { autoAlpha: 0, filter: "blur(10px)" });
     gsap.set("#bottom-nav-indicator", { autoAlpha: 0, y: 20, filter: "blur(10px)" });
 
     // Ensure final content is hidden from flow initially
@@ -294,7 +234,7 @@ function runIntroAnimation() {
         filter: "blur(0px)",
         stagger: 0,
         ease: "expo.inOut",
-        clearProps: "filter" // Clear for sharpness after anim
+        clearProps: "filter"
     })
     .to(kannadaElement, {
         duration: 2.0,
@@ -314,7 +254,6 @@ function runExitAnimation() {
     const tl = gsap.timeline({
         onComplete: () => {
             btn.classList.add('interactive');
-            attachHoverListeners(); // Re-attach for new elements
         }
     });
 
@@ -352,7 +291,7 @@ function runExitAnimation() {
         duration: 1.6,
         y: -50,
         autoAlpha: 0,
-        filter: "blur(15px)", // Increased blur for exit
+        filter: "blur(15px)",
         ease: "expo.inOut"
     }, "exitStart")
 
@@ -482,16 +421,14 @@ function enterSite() {
             enableSmoothScroll();
 
              // --- SYNCED APPEARANCE ---
-             gsap.to(["#top-nav", "#scroll-instruction", "#bottom-nav-indicator"], {
+             // Changed: #top-nav is now #menu-trigger
+             gsap.to(["#menu-trigger", "#scroll-instruction", "#bottom-nav-indicator"], {
                 autoAlpha: 1,
                 y: 0,
                 filter: "blur(0px)",
                 duration: 0.8,
                 ease: "power2.out"
             });
-
-            // Re-attach hover for the new menu items
-            attachHoverListeners();
         }
     });
 
@@ -508,13 +445,13 @@ function enterSite() {
     tl.to(wreath, {
         duration: 0.8,
         autoAlpha: 0,
-        filter: "blur(15px)", // Heavy blur for exit
+        filter: "blur(15px)",
         ease: "expo.in"
     }, 0);
 
     // TEXT CLONE: Fade & Blur Out
     tl.to(textClone, {
-        duration: 0.8, // MATCHED TO WREATH (Was 0.6)
+        duration: 0.8,
         y: -40,
         autoAlpha: 0,
         filter: "blur(15px)",
@@ -523,7 +460,7 @@ function enterSite() {
 
     // BUTTON CLONE: Fade & Blur Out
     tl.to(btnClone, {
-        duration: 0.8, // MATCHED TO WREATH (Was 0.6)
+        duration: 0.8,
         y: 30,
         autoAlpha: 0,
         scale: 0.9,
@@ -579,7 +516,7 @@ class SmoothScroll {
         // Interaction Flags
         this.isDragging = false;
         this.isWheeling = false;
-        this.isAutoScrolling = false; // New flag for click animation
+        this.isAutoScrolling = false;
         this.wheelTimeout = null;
 
         // Instruction visibility flag
@@ -590,7 +527,7 @@ class SmoothScroll {
         this.rafId = null;
 
         // Physics Params
-        this.friction = 0.08; // Inertia for the actual scroll (current following target)
+        this.friction = 0.08;
         this.springFactor = 0.2;
         this.dragSpeed = 1.5;
         this.elasticity = 0.2;
@@ -599,7 +536,7 @@ class SmoothScroll {
         this.navLines = [];
         this.navLabel = document.getElementById('nav-label');
         this.navContainer = document.getElementById('nav-lines');
-        this.navIndicator = document.getElementById('bottom-nav-indicator'); // Added ref to the container
+        this.navIndicator = document.getElementById('bottom-nav-indicator');
         this.sections = Array.from(document.querySelectorAll('.scroll-section'));
 
         // Tracks hover state for the Nav
@@ -621,26 +558,79 @@ class SmoothScroll {
         if (!this.navContainer) return;
         this.navContainer.innerHTML = '';
 
+        // Remove gap from container to handle spacing via wrappers
+        // effectively maximizing the hit area between items.
+        this.navContainer.style.gap = '0px';
+
+        // Select elements to dim
+        const elementsToDim = "#scroll-viewport, #menu-trigger, #home-screen";
+
+        // IMPORTANT: We moved the dimming listeners FROM the container TO the wrappers
+        // to ensure empty padding space in the container does not trigger the effect.
+
         this.sections.forEach((section, index) => {
+            // 1. Create Wrapper (Hit Area)
+            // This element creates a larger invisible target around the stick
+            const wrapper = document.createElement('div');
+            wrapper.classList.add('nav-line-wrapper');
+
+            // Style wrapper to fill the gap space (12px total width per item)
+            // and full height of the container (32px).
+            wrapper.style.width = '12px';
+            wrapper.style.height = '100%';
+            wrapper.style.display = 'flex';
+            wrapper.style.alignItems = 'flex-end';
+            wrapper.style.justifyContent = 'center';
+            wrapper.style.cursor = 'pointer';
+            wrapper.style.position = 'relative';
+
+            // 2. Create Visual Line
             const line = document.createElement('div');
             line.classList.add('nav-line');
+            // Remove pointer events from the visual line so it doesn't
+            // interfere with the wrapper's mouse events
+            line.style.pointerEvents = 'none';
 
-            // Interaction: Mouse Enter
-            line.addEventListener('mouseenter', () => {
+            // Interaction: Mouse Enter (on Wrapper)
+            wrapper.addEventListener('mouseenter', () => {
                 this.navState.isHovering = true;
                 this.navState.hoveredIndex = index;
-                this.updateNavLabel(index, true); // Fade in label
+                this.updateNavLabel(index, true);
+
+                // --- NEW: Trigger Global Dimming here ---
+                gsap.to(elementsToDim, {
+                    opacity: 0.1,
+                    filter: "blur(4px)",
+                    duration: 0.5,
+                    ease: "power2.out",
+                    overwrite: "auto"
+                });
             });
 
-            // Interaction: Mouse Leave
-            this.navContainer.addEventListener('mouseleave', () => {
+            // Interaction: Mouse Leave (on Wrapper)
+            wrapper.addEventListener('mouseleave', (e) => {
                  this.navState.isHovering = false;
                  this.navState.hoveredIndex = -1;
-                 this.updateNavLabel(-1, false); // Fade out label
+                 this.updateNavLabel(-1, false);
+
+                 // --- NEW: Restore Global Dimming (Smart Check) ---
+                 // If we are moving directly into another wrapper (gapless), do NOT restore yet.
+                 // This prevents flickering.
+                 if (e.relatedTarget && e.relatedTarget.closest('.nav-line-wrapper')) {
+                     return;
+                 }
+
+                 gsap.to(elementsToDim, {
+                    opacity: 1,
+                    filter: "blur(0px)",
+                    duration: 0.5,
+                    ease: "power2.out",
+                    overwrite: "auto"
+                });
             });
 
-            // Interaction: Click to Scroll
-            line.addEventListener('mousedown', (e) => {
+            // Interaction: Click to Scroll (on Wrapper)
+            wrapper.addEventListener('mousedown', (e) => {
                 // STOP PROPAGATION so the drag logic doesn't fire
                 e.stopPropagation();
 
@@ -657,7 +647,7 @@ class SmoothScroll {
                 gsap.to(this, {
                     current: clampedTarget,
                     target: clampedTarget,
-                    duration: 2.5, // Increased duration for smoother slow scroll
+                    duration: 2.5,
                     ease: "expo.out",
                     onComplete: () => {
                         this.isAutoScrolling = false;
@@ -665,8 +655,9 @@ class SmoothScroll {
                 });
             });
 
-            this.navContainer.appendChild(line);
-            this.navLines.push(line);
+            wrapper.appendChild(line);
+            this.navContainer.appendChild(wrapper);
+            this.navLines.push(line); // We still animate the visual line
         });
     }
 
@@ -703,7 +694,6 @@ class SmoothScroll {
                     targetHeight = 24;
                     targetOpacity = 0.3;
                 }
-                // Others remain default
 
             } else {
                 // SCROLL SYNC MODE
@@ -714,50 +704,30 @@ class SmoothScroll {
                 const sectionCenter = sectionLeft + (sectionWidth / 2);
 
                 // 2. Calculate Distance
-                // visualCenter is where the section is on screen right now
                 const visualCenter = sectionCenter - this.current;
-
-                // absolute distance from center of screen in pixels
                 const dist = Math.abs(visualCenter - viewportCenter);
 
                 // 3. Convert to "Unit Distance" (1 unit = 1 screen width)
-                // This makes the math responsive
                 const distRatio = dist / window.innerWidth;
 
                 // 4. Gaussian Function for Organic Falloff
-                // We tune 'k' to match the specific "Neighbor = 24px" requirement
-                // k = 1.1 ensures that at distRatio = 1.0 (neighbor), result is ~0.33
-                // UPDATED: User requested neighbors (at ~0.6 distRatio for 60vw sections) to be max 24px.
-                // At distRatio 0.6, we want activation ~0.33 (which maps to 24px).
-                // exp(-k * 0.6^2) = 0.33 => -k*0.36 = -1.1 => k ≈ 3.05
                 const k = 3.0;
                 let activation = Math.exp(-k * Math.pow(distRatio, 2));
 
                 // 5. EDGE CASE HANDLING (Sticky Ends)
-                // If first section is near/past center to right, keep fully active
                 if (index === 0 && visualCenter > viewportCenter) {
                     activation = 1.0;
                 }
-                // If last section is near/past center to left, keep fully active
                 else if (index === this.sections.length - 1 && visualCenter < viewportCenter) {
                     activation = 1.0;
                 }
 
                 // 6. Map Activation (0 to 1) to Visual Properties
-
-                // Height: Base 20px -> Max 32px (Range 12px)
-                // Neighbor (0.33 activation) gets ~24px
-                // OLD: targetHeight = 20 + (12 * activation);
-                targetHeight = 20; // NEW: Fixed height on scroll (User request: only animate height on hover)
-
-                // Opacity: Base 0.1 -> Max 1.0 (Range 0.9)
-                // We power the activation slightly to make opacity drop faster than height
-                // Neighbor (0.33^1.5 ≈ 0.19) -> 0.1 + (0.9 * 0.19) ≈ 0.27 (Close to 30%)
+                targetHeight = 20;
                 targetOpacity = 0.1 + (0.9 * Math.pow(activation, 1.5));
             }
 
-            // Apply styles using simple LERP for smoothness (optional, or direct set)
-            // Since this runs in RAF, direct set is usually fine, but let's LERP for ultra smooth
+            // Apply styles using simple LERP for smoothness
             const currentH = parseFloat(line.style.height) || 20;
             const currentO = parseFloat(line.style.opacity) || 0.1;
 
@@ -770,20 +740,17 @@ class SmoothScroll {
             line.style.opacity = lerp(currentO, targetOpacity, speed);
         });
 
-        // --- NEW: SQUEEZE NAV INDICATOR ON OVERSCROLL ---
+        // --- SQUEEZE NAV INDICATOR ON OVERSCROLL ---
         if (this.navIndicator) {
              let scale = 1.0;
-             const squeezeFactor = 0.0005; // Adjust for sensitivity (e.g. 200px overscroll = 0.9 scale down)
+             const squeezeFactor = 0.0005;
 
              if (this.current < 0) {
-                 // Left overscroll
                  scale = Math.max(0.9, 1 - (Math.abs(this.current) * squeezeFactor));
              } else if (this.current > this.maxScroll) {
-                 // Right overscroll
                  scale = Math.max(0.9, 1 - ((this.current - this.maxScroll) * squeezeFactor));
              }
 
-             // Apply transform (Preserving translateX(-50%) from CSS)
              this.navIndicator.style.transform = `translateX(-50%) scale(${scale})`;
         }
     }
@@ -810,7 +777,6 @@ class SmoothScroll {
     }
 
     onWheel(e) {
-        // Stop any active auto-scroll animations immediately for responsiveness
         if (this.isAutoScrolling) {
             gsap.killTweensOf(this);
             this.isAutoScrolling = false;
@@ -818,24 +784,21 @@ class SmoothScroll {
 
         let delta = e.deltaY;
 
-        // 1. Apply Resistance if out of bounds (Elasticity)
         if (this.target < 0 || this.target > this.maxScroll) {
             delta *= this.elasticity;
         }
 
         this.target += delta;
 
-        // 2. Manage Wheeling State for Snap Back
         this.isWheeling = true;
         if (this.wheelTimeout) clearTimeout(this.wheelTimeout);
 
         this.wheelTimeout = setTimeout(() => {
             this.isWheeling = false;
-        }, 100); // Wait for scroll to stop before snapping back
+        }, 100);
     }
 
     onDown(e) {
-        // Stop any active auto-scroll animations immediately for responsiveness
         if (this.isAutoScrolling) {
             gsap.killTweensOf(this);
             this.isAutoScrolling = false;
@@ -853,7 +816,6 @@ class SmoothScroll {
         const delta = (e.clientX - this.startX) * this.dragSpeed;
         this.target = this.dragStartScroll - delta;
 
-        // Apply elasticity if out of bounds
         if (this.target < 0) {
             this.target = this.target * this.elasticity;
         } else if (this.target > this.maxScroll) {
@@ -865,8 +827,6 @@ class SmoothScroll {
     onUp() {
         this.isDragging = false;
         this.track.style.cursor = 'grab';
-
-        // Snap logic is handled in animate() now to unify wheel/drag release
     }
 
     animate() {
@@ -882,18 +842,16 @@ class SmoothScroll {
         }
 
         // 2. Interpolate Current towards Target (Momentum)
-        // ONLY if not auto-scrolling. If auto-scrolling, GSAP handles this.current directly.
         if (!this.isAutoScrolling) {
             this.current += (this.target - this.current) * this.friction;
         }
 
-        // Optimization: Snap current to target if very close (only if target is settled)
+        // Optimization
         if (Math.abs(this.target - this.current) < 0.05 && !this.isDragging && !this.isWheeling && !this.isAutoScrolling) {
             this.current = this.target;
         }
 
         // 3. Instruction Text Logic (Hide on Scroll)
-        // Threshold: 50 pixels scrolled
         if (this.current > 50 && !this.isInstructionHidden) {
             this.isInstructionHidden = true;
             gsap.to("#scroll-instruction", {
@@ -923,8 +881,6 @@ class SmoothScroll {
 }
 
 function enableSmoothScroll() {
-    // Initialize the smooth scroll class
-    // We add a small delay to ensure DOM is settled
     setTimeout(() => {
         new SmoothScroll('scroll-track');
     }, 100);
@@ -969,25 +925,17 @@ function startCounter() {
 fetch('assets/metal.svg')
     .then(response => response.text())
     .then(svgContent => {
-        // 1. Inject Standard Logo
         const desktopWrapper = document.getElementById('logoWrapper');
         if (desktopWrapper) {
             desktopWrapper.innerHTML = svgContent;
         }
 
-        // 2. Inject Mobile Logo with Unique IDs
         const mobileWrapper = document.getElementById('mobileLogoWrapper');
         if (mobileWrapper) {
-            // Uniquify IDs to prevent clashes with the desktop SVG
             let uniqueSvg = svgContent;
-
-            // Replace IDs (e.g., id="gradient" -> id="mobile-gradient")
             uniqueSvg = uniqueSvg.replace(/id="([^"]+)"/g, 'id="mobile-$1"');
-
-            // Replace References (e.g., url(#gradient) -> url(#mobile-gradient))
             uniqueSvg = uniqueSvg.replace(/url\(#([^)]+)\)/g, 'url(#mobile-$1)');
             uniqueSvg = uniqueSvg.replace(/xlink:href="#([^"]+)"/g, 'xlink:href="#mobile-$1"');
-
             mobileWrapper.innerHTML = uniqueSvg;
         }
 
