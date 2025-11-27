@@ -3,21 +3,21 @@
    ========================================= */
 const trigger = document.getElementById('menu-trigger');
 const overlay = document.getElementById('menu-overlay');
-// Updated selector to include both the header div and the anchor links
-const links = document.querySelectorAll('.overlay-nav > *');
+// Updated selector to include header, links, AND the footer for animation
+const animatedMenuItems = document.querySelectorAll('.overlay-nav > *, .overlay-footer');
 let isMenuOpen = false;
 
 if (trigger) {
     trigger.addEventListener('click', () => {
         isMenuOpen = !isMenuOpen;
 
-        // Increased duration for a more luxurious, smooth feel
-        const animDuration = 0.85;
-        // Changed from expo (sharp) to power3 (silky/smooth)
-        const syncEase = "power3.inOut";
+        // Increased duration significantly for a luxurious "smooth-fast-smooth" feel
+        const animDuration = 1.2;
+        // Changed to expo.inOut for a more dramatic slow-start / fast-middle / slow-end curve
+        const syncEase = "expo.inOut";
 
         // Kill any running animations to prevent conflicts if clicked rapidly
-        gsap.killTweensOf([overlay, links, '#menu-trigger svg']);
+        gsap.killTweensOf([overlay, animatedMenuItems, '#menu-trigger svg']);
 
         if (isMenuOpen) {
             // --- OPEN SEQUENCE (TIMELINE) ---
@@ -40,8 +40,8 @@ if (trigger) {
                 ease: syncEase
             }, 0); // Start at time 0 (Synced)
 
-            // 3. Links Slide In (Now includes Header)
-            tl.to(links, {
+            // 3. Links Slide In (Now includes Header & Footer)
+            tl.to(animatedMenuItems, {
                 autoAlpha: 1,
                 y: 0,
                 // Slightly looser stagger for a fluid wave effect
@@ -55,7 +55,7 @@ if (trigger) {
             const tl = gsap.timeline();
 
             // 1. Links Slide Out (Reverse Stagger)
-            tl.to(links, {
+            tl.to(animatedMenuItems, {
                 autoAlpha: 0,
                 y: 20, // Move back down to original position
                 stagger: {
@@ -778,11 +778,14 @@ class SmoothScroll {
                 this.isAutoScrolling = true;
 
                 // Animate both target and current so physics don't fight it
+                // CHANGED: "expo.out" -> "power3.out" for a softer landing
+                // CHANGED: 2.5s -> 2.0s to match curve feel
                 gsap.to(this, {
                     current: clampedTarget,
                     target: clampedTarget,
                     duration: 2.5,
-                    ease: "expo.out",
+                    ease: "power4.out",
+                    overwrite: "auto",
                     onComplete: () => {
                         this.isAutoScrolling = false;
                     }

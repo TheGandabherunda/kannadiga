@@ -553,14 +553,15 @@ svg {
     flex-direction: column;
     gap: 12px;
 
-    /* Left Align Items (Flex Start) */
-    align-items: flex-start; /* Changed from center */
+    /* Left Align Items (Flex Start) - Text starts from left edge */
+    align-items: flex-start; /* Changed from center to flex-start */
 
-    /* Removed min-width to allow tight wrapping around text */
-    width: max-content; /* Changed from 100% to hug content for centering */
+    /* Hug content so the column is only as wide as the widest text */
+    /* This allows the parent (#menu-overlay) to center this block perfectly */
+    width: max-content;
 
     /* Internal Text Alignment */
-    text-align: left; /* Changed from center */
+    text-align: left; /* Changed from center to left */
     pointer-events: none;
 }
 
@@ -574,7 +575,7 @@ svg {
     opacity: 0; /* Animated in via JS */
     transform: translateY(20px);
     width: 100%; /* Ensure header takes full width */
-    text-align: left; /* Explicitly align header text */
+    text-align: left; /* Changed from center to left */
 }
 
 /* --- MENU LINKS STYLING --- */
@@ -589,7 +590,7 @@ svg {
     /* Layout: Left align the content */
     position: relative;
     display: flex;
-    justify-content: flex-start; /* Changed from center */
+    justify-content: flex-start; /* Changed from center to flex-start */
     align-items: center;
 
     /* Width: let it fit content */
@@ -692,6 +693,47 @@ svg {
 .overlay-nav a:hover .arrow-icon {
     opacity: 1;
     /* REMOVED: transform: translateX(0) rotate(45deg); */
+}
+
+/* --- OVERLAY FOOTER (Terms & Imprint) --- */
+.overlay-footer {
+    position: absolute;
+    bottom: 32px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none; /* Container passes clicks */
+    z-index: 160;
+
+    /* Animation Initial State */
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.footer-link {
+    font-family: 'Noto Sans Kannada UI', sans-serif;
+    font-size: 16px;
+    font-weight: 400; /* Regular */
+    color: #000000; /* Solid Black */
+    opacity: 0.2;   /* 20% Opacity */
+    text-decoration: none; /* No Underline */
+    pointer-events: auto;
+    transition: opacity 0.3s ease;
+}
+
+.footer-link:hover {
+    opacity: 1; /* Full Opacity on Hover */
+}
+
+.footer-separator {
+    font-family: 'Noto Sans Kannada UI', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    color: #000000;
+    opacity: 0.2; /* Matches 20% opacity */
+    pointer-events: none;
 }
 
 
