@@ -200,11 +200,123 @@ function toKannadaNum(num) {
     return numStr.split('').map(digit => kannadaDigits[parseInt(digit)]).join('');
 }
 
+// --- BACKGROUND SCROLLING TEXT LOGIC ---
+function initBackgroundText() {
+    const container = document.getElementById('bg-text-container');
+    if (!container) return;
+
+    // Clear existing content just in case
+    container.innerHTML = '';
+
+    const textToRepeat = "ಸುಸ್ವಾಗತ";
+    // Increase repetitions to ensure wide screens are filled even after moving
+    const reps = 20;
+
+    // --- DYNAMIC LAYOUT CALCULATION ---
+    // Goal: Fit rows perfectly or center them without cutting off text glyphs.
+
+    // 1. Define Typography
+    const fontSize = 128;
+    // Updated to 1.2 per request (tighter fit, careful of ascenders/descenders)
+    const lineHeight = 1.4;
+    const rowHeightPx = fontSize * lineHeight;
+
+    // 2. Measure Viewport
+    const vh = window.innerHeight;
+
+    // 3. Calculate how many rows fit
+    // Use Math.ceil to ensure we cover the screen.
+    // If it's close to fitting an extra one, we add it to be safe.
+    let rowCount = Math.ceil(vh / rowHeightPx);
+    // Ensure a minimum for safety
+    if (rowCount < 3) rowCount = 3;
+
+    // 4. Apply Container Styles for Centering
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.justifyContent = 'center'; // Centers the block of rows vertically
+    container.style.alignItems = 'center';
+    container.style.overflow = 'hidden';
+    container.style.gap = '0px'; // We handle spacing via line-height
+
+    for (let i = 0; i < rowCount; i++) {
+        const row = document.createElement('div');
+        row.classList.add('bg-text-row');
+
+        // --- INLINE STYLES FOR PERFECT FIT ---
+        // Overwrite CSS to ensure these specific dimensions hold true
+        row.style.fontSize = `${fontSize}px`;
+        row.style.lineHeight = `${lineHeight}`;
+        row.style.height = `${rowHeightPx}px`; // Explicit height
+        row.style.display = 'flex';
+        row.style.alignItems = 'center'; // Vertically align text within the row
+        row.style.whiteSpace = 'nowrap';
+        row.style.flexShrink = '0'; // Prevent squishing
+
+        // Determine direction: even rows L->R, odd rows R->L
+        // (Index 0 is first row -> L->R)
+        const isLeftToRight = (i % 2 === 0);
+
+        if (isLeftToRight) {
+            row.classList.add('row-ltr');
+        } else {
+            row.classList.add('row-rtl');
+        }
+
+        // Fill row content
+        let html = '';
+        for (let j = 0; j < reps; j++) {
+            // Add padding to separate words visually
+            html += `<span class="bg-text-item" style="padding-right: 80px; display: inline-block;">${textToRepeat}</span>`;
+        }
+        row.innerHTML = html;
+        container.appendChild(row);
+
+        // --- ANIMATION ---
+        // We use xPercent: -50 to 0 (or similar) to create infinite effect.
+
+        if (isLeftToRight) {
+            // Move Left to Right: Start at -25% and move to 0 (assuming enough reps to cover)
+            gsap.fromTo(row,
+                { xPercent: -25 },
+                { xPercent: 0, ease: "none", duration: 40, repeat: -1 }
+            );
+        } else {
+            // Move Right to Left: Start at 0 and move to -25%
+            gsap.fromTo(row,
+                { xPercent: 0 },
+                { xPercent: -25, ease: "none", duration: 40, repeat: -1 }
+            );
+        }
+    }
+}
+
+// Add resize listener to re-calculate rows if window changes significantly
+let resizeTimeout;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+        // Only re-init if the container is currently visible or active
+        const container = document.getElementById('bg-text-container');
+        if (container && container.style.opacity !== '0') {
+             // We can re-run init, but we must be careful not to kill the animation state abruptly if visible.
+             // For now, simpler to just let it be or refresh.
+             // Re-running initBackgroundText() is safe enough for a resize.
+             initBackgroundText();
+        }
+    }, 200);
+});
+
+
 // --- GSAP ENTRANCE ANIMATION (First Load) ---
 function runIntroAnimation() {
+    // Initialize background text (starts hidden via CSS)
+    initBackgroundText();
+
     const tl = gsap.timeline({ onComplete: startAppLogic });
     const topRowElements = ['.loading-text-left', '.container', '.loading-text-right'];
     const kannadaElement = '.bottom-text';
+    const bgTextContainer = '#bg-text-container';
 
     // Initial Setters: All elements start fuzzy (blur) and hidden
     gsap.set(".container", { xPercent: -50, yPercent: -50 });
@@ -214,6 +326,7 @@ function runIntroAnimation() {
     gsap.set("#wreath-animation", { autoAlpha: 0, filter: "blur(10px)" });
     gsap.set("#home-screen", { autoAlpha: 0 });
     gsap.set("#scroll-instruction", { autoAlpha: 0, filter: "blur(10px)" });
+    gsap.set(bgTextContainer, { autoAlpha: 0, filter: "blur(15px)" }); // Start hidden & Blurred
 
     // Ensure Top Nav (now just the trigger) & Bottom Nav are hidden initially
     gsap.set("#menu-trigger", { autoAlpha: 0, filter: "blur(10px)" });
@@ -245,6 +358,8 @@ function runIntroAnimation() {
         ease: "expo.inOut",
         clearProps: "filter"
     }, "-=1.9");
+
+    // NOTE: Background text fade-in removed from here so it doesn't show during loading.
 }
 
 // --- GSAP EXIT ANIMATION (Loading -> Welcome) ---
@@ -296,6 +411,15 @@ function runExitAnimation() {
         ease: "expo.inOut"
     }, "exitStart")
 
+    // --- NEW: FADE IN BACKGROUND TEXT HERE (Welcome Phase) ---
+    // Now with Blur Effect & Early timing
+    .to('#bg-text-container', {
+        duration: 2.5,
+        autoAlpha: 1,
+        filter: "blur(0px)",
+        ease: "power2.out"
+    }, "exitStart")
+
     .to(container, {
         duration: 1.6,
         y: 0,
@@ -303,6 +427,7 @@ function runExitAnimation() {
     }, "exitStart")
 
     // ENTER NEW TEXT: Unblur In
+    // DELAYED start (+=1.1) to let the background text appear first
     .to([welcomeText, enterButton], {
         duration: 1.2,
         y: 0,
@@ -311,9 +436,9 @@ function runExitAnimation() {
         ease: "expo.out",
         stagger: 0.1,
         clearProps: "filter,transform"
-    }, "exitStart+=0.7")
+    }, "exitStart+=1.1")
 
-    .call(() => { if (wreathAnim) wreathAnim.play(); }, null, "exitStart+=0.4")
+    .call(() => { if (wreathAnim) wreathAnim.play(); }, null, "exitStart+=0.8")
 
     // ENTER WREATH: Unblur In
     .to("#wreath-animation", {
@@ -321,7 +446,7 @@ function runExitAnimation() {
         autoAlpha: 1,
         filter: "blur(0px)",
         ease: "expo.out"
-    }, "exitStart+=0.4");
+    }, "exitStart+=0.8");
 }
 
 // --- HOME SCREEN TRANSITION (Welcome -> Dictionary via FLIP & Crossfade) ---
@@ -334,6 +459,7 @@ function enterSite() {
     const defGroup = document.querySelector('.def-group');
     const mainWrapper = document.querySelector('.main-content-wrapper');
     const textAnchor = document.querySelector('.text-anchor');
+    const bgTextContainer = document.getElementById('bg-text-container');
 
     // Disable button interaction
     btn.style.pointerEvents = 'none';
@@ -434,6 +560,13 @@ function enterSite() {
     });
 
     // --- PHASE 1: EXITING ELEMENTS ---
+
+    // BACKGROUND TEXT: Fade Out
+    tl.to(bgTextContainer, {
+        duration: 0.8,
+        autoAlpha: 0,
+        ease: "power2.in"
+    }, 0);
 
     // WREATH: Reverse immediately
     if (wreathAnim) {

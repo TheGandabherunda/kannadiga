@@ -158,7 +158,42 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+    overflow: hidden; /* Ensure background text doesn't spill */
 }
+
+/* --- BACKGROUND SCROLLING TEXT --- */
+#bg-text-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0; /* Behind main content (z-index 5) */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    pointer-events: none;
+    overflow: hidden;
+    gap: 20px; /* Space between rows */
+    opacity: 0; /* Handled by JS for entry */
+}
+
+.bg-text-row {
+    white-space: nowrap;
+    font-family: 'Noto Sans Kannada UI', sans-serif;
+    font-size: 128px;
+    font-weight: 700; /* Bold */
+    color: #000000;
+    opacity: 0.05; /* 5% opacity */
+    display: flex;
+    will-change: transform;
+    line-height: 1.2;
+}
+
+.bg-text-item {
+    padding-right: 60px; /* Space between repeated words */
+}
+
 
 /* SECTION 2 & 3: Placeholders */
 .placeholder-section {
@@ -193,6 +228,7 @@ body {
     align-items: center;
     pointer-events: none;
     backface-visibility: hidden;
+    z-index: 10; /* Ensure above BG text */
 }
 
 /* WRAPPER FOR LOGO + TEXT */
