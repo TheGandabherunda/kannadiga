@@ -147,7 +147,7 @@ window.addEventListener('mouseup', () => {
 
 
 /* =========================================
-   SVG LIGHTING LOGIC
+   SVG LIGHTING LOGIC (RESTRICTED TO VIEWPORT)
    ========================================= */
 window.initSVGLights = function() {
     const lightSource = document.getElementById('light-source');
@@ -160,6 +160,29 @@ window.initSVGLights = function() {
 
     window.addEventListener('mousemove', (e) => {
         if (!lightSource || !diffuseSource) return;
+
+        // --- NEW: Restrict to Home Section Viewport ---
+        const homeSection = document.querySelector('.home-section');
+        if (homeSection) {
+            const rect = homeSection.getBoundingClientRect();
+            // Logic: If home section is fully scrolled out to the left (rect.right <= 0)
+            // or fully out to the right (rect.left >= window.innerWidth), disable effect.
+            if (rect.right <= 0 || rect.left >= window.innerWidth) {
+                // Reset lights to default "off" state
+                lightSource.setAttribute('x', 36);
+                lightSource.setAttribute('y', 48);
+                diffuseSource.setAttribute('x', 36);
+                diffuseSource.setAttribute('y', 48);
+                specularElement.setAttribute('specularConstant', '0.75');
+                shadowFilter.setAttribute('dx', 0);
+                shadowFilter.setAttribute('dy', 0);
+                logoWrapper.style.setProperty('--light-x', '50%');
+                logoWrapper.style.setProperty('--light-y', '50%');
+                logoWrapper.style.setProperty('--glow-opacity', '0');
+                return; // Stop execution
+            }
+        }
+        // ----------------------------------------------
 
         const logoRect = logoWrapper.getBoundingClientRect();
         const logoCenterX = logoRect.left + logoRect.width / 2;
@@ -576,6 +599,7 @@ class SmoothScroll {
         this.navLines = [];
         this.navLabel = document.getElementById('nav-label');
         this.navContainer = document.getElementById('nav-lines');
+        this.navIndicator = document.getElementById('bottom-nav-indicator'); // Added ref to the container
         this.sections = Array.from(document.querySelectorAll('.scroll-section'));
 
         // Tracks hover state for the Nav
@@ -723,7 +747,8 @@ class SmoothScroll {
 
                 // Height: Base 20px -> Max 32px (Range 12px)
                 // Neighbor (0.33 activation) gets ~24px
-                targetHeight = 20 + (12 * activation);
+                // OLD: targetHeight = 20 + (12 * activation);
+                targetHeight = 20; // NEW: Fixed height on scroll (User request: only animate height on hover)
 
                 // Opacity: Base 0.1 -> Max 1.0 (Range 0.9)
                 // We power the activation slightly to make opacity drop faster than height
@@ -744,6 +769,23 @@ class SmoothScroll {
             line.style.height = `${lerp(currentH, targetHeight, speed)}px`;
             line.style.opacity = lerp(currentO, targetOpacity, speed);
         });
+
+        // --- NEW: SQUEEZE NAV INDICATOR ON OVERSCROLL ---
+        if (this.navIndicator) {
+             let scale = 1.0;
+             const squeezeFactor = 0.0005; // Adjust for sensitivity (e.g. 200px overscroll = 0.9 scale down)
+
+             if (this.current < 0) {
+                 // Left overscroll
+                 scale = Math.max(0.9, 1 - (Math.abs(this.current) * squeezeFactor));
+             } else if (this.current > this.maxScroll) {
+                 // Right overscroll
+                 scale = Math.max(0.9, 1 - ((this.current - this.maxScroll) * squeezeFactor));
+             }
+
+             // Apply transform (Preserving translateX(-50%) from CSS)
+             this.navIndicator.style.transform = `translateX(-50%) scale(${scale})`;
+        }
     }
 
     init() {
