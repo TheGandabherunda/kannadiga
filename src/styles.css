@@ -678,27 +678,26 @@ svg {
 #nav-label {
     font-family: 'Noto Sans Kannada UI', sans-serif;
     font-size: 16px;
-    font-weight: 400;
-    color: rgba(0, 0, 0, 0.2);
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.4);
     opacity: 0; /* Hidden by default */
     transform: translateY(4px);
     /* transition: opacity 0.3s ease, transform 0.3s ease; <-- REMOVED FOR JS CONTROL */
     pointer-events: none;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
 }
 
 #nav-lines {
     display: flex;
     align-items: flex-end; /* Grow upwards */
-    gap: 10px;
+    gap: 8px;
     height: 32px; /* Fixed container height */
     pointer-events: auto; /* Re-enable clicks on lines */
-    padding: 0 10px; /* Hitbox padding */
+    padding: 0 8px; /* Hitbox padding */
 }
 
 .nav-line {
-    width: 4px;
+    width: 3.5px;
     border-radius: 999px;
     background-color: #000;
     cursor: pointer;
