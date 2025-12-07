@@ -551,7 +551,7 @@ svg {
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
 
     /* Left Align Items (Flex Start) - Text starts from left edge */
     align-items: flex-start; /* Changed from center to flex-start */
@@ -571,7 +571,7 @@ svg {
     font-size: 16px;
     font-weight: 600; /* Semibold */
     color: #000000;
-    margin-bottom: 8px; /* Extra spacing from items */
+    margin-bottom: 16px; /* Extra spacing from items */
     opacity: 0; /* Animated in via JS */
     transform: translateY(20px);
     width: 100%; /* Ensure header takes full width */
@@ -623,7 +623,6 @@ svg {
 /* Base Text (Static) */
 .base-text {
     font-weight: 400;
-    /* No font-weight change on hover */
     white-space: nowrap;
 }
 
@@ -635,50 +634,34 @@ svg {
     pointer-events: none;
     font-weight: 300;
     color: #444;
-    /* Changed transition to only Opacity (No movement) */
     transition: opacity 0.3s ease;
 }
 
 /* LEFT SIDE TEXT */
 .reveal-text.left-side {
-    /* Anchor to the LEFT edge of the CENTERED menu item */
     right: 100%;
     margin-right: 24px;
-
-    /* Text flows to the left */
     width: 400px;
     text-align: left;
-
-    /* REMOVED: transform: translateX(20px); */
 }
 
 /* RIGHT SIDE TEXT */
 .reveal-text.right-side {
-    /* Anchor to the RIGHT edge of the CENTERED menu item */
     left: 100%;
     margin-left: 24px;
-
-    /* Text flows to the right */
     width: 400px;
     text-align: right;
-
-    /* REMOVED: transform: translateX(-20px); */
 }
 
 /* ARROW ICON */
 .arrow-icon {
     position: absolute;
-    left: 100%; /* Start at right edge of menu item */
-
-    /* Position after the Right Text block (24px gap + 400px width + 12px gap) */
-    margin-left: 436px;
+    left: 100%;
+    margin-left: 432px;
 
     font-family: 'Inter', sans-serif;
     font-weight: 400;
     opacity: 0;
-
-    /* REMOVED: transform: translateX(-10px) rotate(45deg); */
-    /* Keeping it static without rotation or slide */
 
     transition: opacity 0.3s ease;
 }
