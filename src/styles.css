@@ -659,10 +659,18 @@ svg {
     left: 100%;
     margin-left: 432px;
 
-    font-family: 'Inter', sans-serif;
-    font-weight: 400;
-    opacity: 0;
+    /* Font Settings for Material Symbols */
+    font-family: 'Material Symbols Rounded';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 16px; /* Standard Icon Size */
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    white-space: nowrap;
+    direction: ltr;
 
+    opacity: 0;
     transition: opacity 0.3s ease;
 }
 
