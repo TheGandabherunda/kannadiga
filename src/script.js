@@ -875,7 +875,7 @@ class SmoothScroll {
 
             if (this.navState.isHovering) {
                 const dist = Math.abs(index - this.navState.hoveredIndex);
-                if (dist === 0) { targetHeight = 32; targetOpacity = 1.0; }
+                if (dist === 0) { targetHeight = 26; targetOpacity = 1.0; }
                 else if (dist === 1) { targetHeight = 24; targetOpacity = 0.3; }
 
             } else {

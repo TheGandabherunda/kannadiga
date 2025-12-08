@@ -740,7 +740,7 @@ svg {
     display: flex;
     align-items: flex-end;
     gap: 8px;
-    height: 32px;
+    height: 26px;
     pointer-events: auto;
     padding: 0 8px;
 }
