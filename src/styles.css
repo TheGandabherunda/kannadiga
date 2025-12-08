@@ -315,9 +315,9 @@ body {
     z-index: 10;
     white-space: nowrap;
     font-family: 'Noto Sans Kannada UI', sans-serif;
-    font-size: 24px;
-    font-weight: 600;
-    color: #000000;
+    font-size: 56px;
+    font-weight: 800;
+    color: rgba(0, 0, 0, 0.06);
 }
 
 /* --- SCROLL INSTRUCTION TEXT --- */
