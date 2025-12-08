@@ -204,12 +204,14 @@ let textSpriteWidth = 0;
 let textSpriteHeight = 0;
 
 // 1. Create a "Rubber Stamp" of the text (Sprite)
-function createTextSprite(text, fontSize) {
+function createTextSprite(text, fontSize, dotColor) {
     const spriteCanvas = document.createElement('canvas');
     const ctx = spriteCanvas.getContext('2d');
 
-    // Set Font to measure
-    ctx.font = `${fontSize}px 'Noto Sans Kannada UI', sans-serif`;
+    // Set Font to Semibold (600)
+    const fontSpec = `600 ${fontSize}px 'Noto Sans Kannada UI', sans-serif`;
+    ctx.font = fontSpec;
+
     const metrics = ctx.measureText(text);
     const width = Math.ceil(metrics.width);
     const height = Math.ceil(fontSize * 1.5); // Buffer for height
@@ -218,13 +220,31 @@ function createTextSprite(text, fontSize) {
     spriteCanvas.width = width;
     spriteCanvas.height = height;
 
-    // Draw text once onto this tiny canvas
-    // We apply opacity HERE, so we don't calculate it every frame
-    ctx.font = `${fontSize}px 'Noto Sans Kannada UI', sans-serif`;
-    ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
+    // Reset font after resize
+    ctx.font = fontSpec;
     ctx.textBaseline = "middle";
-    ctx.textAlign = "center";
-    ctx.fillText(text, width / 2, height / 2);
+    ctx.textAlign = "left"; // Use left alignment for manual positioning
+
+    // Split logic to color the dot
+    const parts = text.split("•");
+
+    // Apply consistent opacity for both text and dot
+    ctx.globalAlpha = 0.05;
+
+    // Draw Main Text (Black)
+    ctx.fillStyle = "#000000";
+    const mainText = parts[0];
+    ctx.fillText(mainText, 0, height / 2);
+
+    // Draw Dot (Colored)
+    if (parts.length > 1) {
+        // Measure where the first part ends
+        const mainWidth = ctx.measureText(mainText).width;
+
+        // Set dot color (Default to black if undefined)
+        ctx.fillStyle = dotColor || "#000000";
+        ctx.fillText("•", mainWidth, height / 2);
+    }
 
     return { canvas: spriteCanvas, width, height };
 }
@@ -235,16 +255,19 @@ function createKannadaRings() {
     const maxRadius = Math.sqrt(width * width + height * height) / 2;
 
     // Configuration
-    const fontSize = 16; // Increased to 20
-    const ringSpacing = 32; // Increased to 32 (gap + font size)
+    const fontSize = 16;
+    const ringSpacing = 32;
     const textStr = " ಕನ್ನಡಿಗ  •";
 
-    // Force sprite regeneration for new size
+    // Get the current active color for the dot
+    const currentColor = preloadColors[lastColorIndex] || '#000000';
+
+    // Force sprite regeneration
     textSprite = null;
 
-    // Generate the sprite if not exists or if needed
+    // Generate the sprite
     if (!textSprite) {
-        const spriteData = createTextSprite(textStr, fontSize);
+        const spriteData = createTextSprite(textStr, fontSize, currentColor);
         textSprite = spriteData.canvas;
         textSpriteWidth = spriteData.width;
         textSpriteHeight = spriteData.height;
@@ -571,6 +594,10 @@ function enterSite() {
     const mainWrapper = document.querySelector('.main-content-wrapper');
     const bgTextContainer = document.getElementById('bg-text-container');
     const kannadaCirclesContainer = document.getElementById('kannada-circles-container');
+
+    // --- REFRESH RINGS COLOR ---
+    // Ensure the concentric circles use the final determined color for the dot
+    createKannadaRings();
 
     // --- UPDATED SELECTORS FOR SPLIT STRUCTURE ---
     const welcomeView = document.getElementById('welcome-view');
