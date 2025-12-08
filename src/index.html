@@ -29,7 +29,8 @@
     <style>
         .loading-text-left, .bottom-text, .loading-text-right, .welcome-text,
         .enter-button, #wreath-animation, #home-screen, .def-group,
-        #scroll-instruction, #menu-trigger, #bottom-nav-indicator {
+        #scroll-instruction, #menu-trigger, #bottom-nav-indicator,
+        #welcome-sequence, #home-sequence {
             visibility: hidden;
             will-change: transform, opacity, filter;
         }
@@ -83,7 +84,7 @@
         <a href="#">
             <span class="reveal-text left-side">ಕರ್ನಾಟಕದ ಆಚರಣೆ ಮತ್ತು</span>
             <span class="base-text">ಸಂಸ್ಕೃತಿ - ಹಬ್ಬ</span>
-            <span class="reveal-text right-side">ಗಳ ಬಗ್ಗೆ ತಿಳಿಯಿರಿ</span> <!-- Empty right side -->
+            <span class="reveal-text right-side">ಗಳ ಬಗ್ಗೆ ತಿಳಿಯಿರಿ</span>
             <span class="arrow-icon">arrow_outward</span>
         </a>
 
@@ -120,7 +121,7 @@
         </a>
     </nav>
 
-    <!-- NEW: Footer Links (Terms & Imprint) -->
+    <!-- Footer Links -->
     <div class="overlay-footer">
         <a href="#" class="footer-link">ನಿಯಮಗಳು ಮತ್ತು ಷರತ್ತುಗಳು</a>
         <span class="footer-separator">•</span>
@@ -134,25 +135,52 @@
     <div id="nav-lines"></div>
 </div>
 
-<!-- HOME SCREEN -->
+<!-- HOME SCREEN LAYER (Fixed Elements) -->
 <div id="home-screen"></div>
 
 <!-- SCROLL VIEWPORT -->
 <div id="scroll-viewport">
     <div id="scroll-track">
+
+        <!-- =========================================
+             SECTION: HOME / WELCOME
+             ========================================= -->
         <div class="scroll-section home-section" data-nav-name="ಕನ್ನಡಿಗ">
-            <!-- BACKGROUND SCROLLING TEXT CONTAINER -->
+
+            <!-- 1. BACKGROUND LAYER -->
             <div id="bg-text-container"></div>
 
-            <div class="loading-text-left">ಸಿರಿಗನ್ನಡಂ ಗೆಲ್ಗೆ &nbsp; • &nbsp; ಸಿರಿಗನ್ನಡಂ ಬಾಳ್ಗೆ</div>
+            <!-- 2. LOADING UI SEPARATE STRUCTURE -->
+            <div id="loading-ui">
+                <div class="loading-text-left">ಸಿರಿಗನ್ನಡಂ ಗೆಲ್ಗೆ &nbsp; • &nbsp; ಸಿರಿಗನ್ನಡಂ ಬಾಳ್ಗೆ</div>
+                <div class="bottom-text" id="loadingCounter">೦೦</div>
+                <div class="loading-text-right">ಕನ್ನಡಿಗ</div>
+            </div>
+
+            <!-- 3. MAIN CONTENT LAYER (Contains Logic for Welcome & Home) -->
             <div id="scroll-instruction">ಸ್ಕ್ರಾಲ್ ಮಾಡಿ</div>
+
             <div class="container" id="interaction-container">
+                <!-- Shared Visuals -->
                 <div id="wreath-animation"></div>
+
                 <div class="main-content-wrapper">
+                    <!-- Shared Logo -->
                     <div class="logo-wrapper" id="logoWrapper"></div>
-                    <div class="final-sequence-content">
+
+                    <!-- A. WELCOME SEQUENCE STRUCTURE -->
+                    <div id="welcome-sequence" class="sequence-content">
                         <div class="text-anchor">
                             <div class="welcome-text">ನಿಮಗೆ<br>ಆತ್ಮೀಯ ಸ್ವಾಗತ.</div>
+                        </div>
+                        <button class="enter-button" onclick="enterSite()">ಪ್ರವೇಶಿಸಿ</button>
+                    </div>
+
+                    <!-- B. HOME SEQUENCE STRUCTURE (Hidden Initially) -->
+                    <div id="home-sequence" class="sequence-content" style="display: none;">
+                        <div class="text-anchor">
+                            <!-- Note: Reusing welcome-text class for font styling, but structure is separate -->
+                            <div class="welcome-text home-title" style="text-align: left; font-size: 32px; margin: 0; padding: 0;">ಕನ್ನಡಿಗ</div>
                             <div class="def-group">
                                 <div class="def-phonetic">♪ kannaḍiga</div>
                                 <div class="def-noun">noun</div>
@@ -160,14 +188,16 @@
                                 <div class="def-desc">a man belonging to Karnāṭaka.</div>
                             </div>
                         </div>
-                        <button class="enter-button" onclick="enterSite()">ಪ್ರವೇಶಿಸಿ</button>
                     </div>
+
                 </div>
             </div>
-            <div class="bottom-text" id="loadingCounter">೦೦</div>
-            <div class="loading-text-right">ಕನ್ನಡಿಗ</div>
+
         </div>
-        <!-- Placeholders -->
+
+        <!-- =========================================
+             OTHER SECTIONS
+             ========================================= -->
         <div class="scroll-section placeholder-section" data-nav-name="ಇತಿಹಾಸ"><h2 class="text-4xl font-bold opacity-20">ಇತಿಹಾಸ</h2></div>
         <div class="scroll-section placeholder-section" data-nav-name="ಸಾಹಿತ್ಯ"><h2 class="text-4xl font-bold opacity-20">ಸಾಹಿತ್ಯ</h2></div>
         <div class="scroll-section placeholder-section" data-nav-name="ಕಲೆ"><h2 class="text-4xl font-bold opacity-20">ಕಲೆ</h2></div>

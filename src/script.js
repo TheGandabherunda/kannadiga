@@ -1,85 +1,31 @@
 /* =========================================
-   MENU OVERLAY LOGIC (NEW)
+   MENU OVERLAY LOGIC
    ========================================= */
 const trigger = document.getElementById('menu-trigger');
 const overlay = document.getElementById('menu-overlay');
-// Updated selector to include header, links, AND the footer for animation
 const animatedMenuItems = document.querySelectorAll('.overlay-nav > *, .overlay-footer');
 let isMenuOpen = false;
 
 if (trigger) {
     trigger.addEventListener('click', () => {
         isMenuOpen = !isMenuOpen;
-
-        // Increased duration significantly for a luxurious "smooth-fast-smooth" feel
         const animDuration = 1.2;
-        // Changed to expo.inOut for a more dramatic slow-start / fast-middle / slow-end curve
         const syncEase = "expo.inOut";
 
-        // Kill any running animations to prevent conflicts if clicked rapidly
         gsap.killTweensOf([overlay, animatedMenuItems, '#menu-trigger svg']);
 
         if (isMenuOpen) {
-            // --- OPEN SEQUENCE (TIMELINE) ---
             const tl = gsap.timeline();
-
             overlay.style.pointerEvents = 'auto';
 
-            // 1. Overlay Fade In
-            tl.to(overlay, {
-                autoAlpha: 1,
-                duration: animDuration,
-                ease: syncEase
-            }, 0); // Start at time 0
-
-            // 2. Icon Rotation (+ to x)
-            // Using same ease as links to stay perfectly in sync
-            tl.to('#menu-trigger svg', {
-                rotation: 45,
-                duration: animDuration,
-                ease: syncEase
-            }, 0); // Start at time 0 (Synced)
-
-            // 3. Links Slide In (Now includes Header & Footer)
-            tl.to(animatedMenuItems, {
-                autoAlpha: 1,
-                y: 0,
-                // Slightly looser stagger for a fluid wave effect
-                stagger: 0.05,
-                duration: animDuration,
-                ease: syncEase
-            }, 0); // Start at time 0 (Synced)
-
+            tl.to(overlay, { autoAlpha: 1, duration: animDuration, ease: syncEase }, 0);
+            tl.to('#menu-trigger svg', { rotation: 45, duration: animDuration, ease: syncEase }, 0);
+            tl.to(animatedMenuItems, { autoAlpha: 1, y: 0, stagger: 0.05, duration: animDuration, ease: syncEase }, 0);
         } else {
-            // --- CLOSE SEQUENCE (TIMELINE) ---
             const tl = gsap.timeline();
-
-            // 1. Links Slide Out (Reverse Stagger)
-            tl.to(animatedMenuItems, {
-                autoAlpha: 0,
-                y: 20, // Move back down to original position
-                stagger: {
-                    each: 0.05,
-                    from: "end" // Bottom to top
-                },
-                duration: animDuration,
-                ease: syncEase
-            }, 0); // Start at time 0
-
-            // 2. Icon Rotation Back (x to +)
-            tl.to('#menu-trigger svg', {
-                rotation: 0,
-                duration: animDuration,
-                ease: syncEase
-            }, 0); // Start at time 0
-
-            // 3. Overlay Fade Out
-            tl.to(overlay, {
-                autoAlpha: 0,
-                duration: animDuration,
-                ease: syncEase
-            }, 0); // Start at time 0
-
+            tl.to(animatedMenuItems, { autoAlpha: 0, y: 20, stagger: { each: 0.05, from: "end" }, duration: animDuration, ease: syncEase }, 0);
+            tl.to('#menu-trigger svg', { rotation: 0, duration: animDuration, ease: syncEase }, 0);
+            tl.to(overlay, { autoAlpha: 0, duration: animDuration, ease: syncEase }, 0);
             overlay.style.pointerEvents = 'none';
         }
     });
@@ -102,14 +48,11 @@ window.initSVGLights = function() {
     window.addEventListener('mousemove', (e) => {
         if (!lightSource || !diffuseSource) return;
 
-        // --- NEW: Restrict to Home Section Viewport ---
         const homeSection = document.querySelector('.home-section');
         if (homeSection) {
             const rect = homeSection.getBoundingClientRect();
-            // Logic: If home section is fully scrolled out to the left (rect.right <= 0)
-            // or fully out to the right (rect.left >= window.innerWidth), disable effect.
             if (rect.right <= 0 || rect.left >= window.innerWidth) {
-                // Reset lights to default "off" state
+                // Reset lights
                 lightSource.setAttribute('x', 36);
                 lightSource.setAttribute('y', 48);
                 diffuseSource.setAttribute('x', 36);
@@ -120,10 +63,9 @@ window.initSVGLights = function() {
                 logoWrapper.style.setProperty('--light-x', '50%');
                 logoWrapper.style.setProperty('--light-y', '50%');
                 logoWrapper.style.setProperty('--glow-opacity', '0');
-                return; // Stop execution
+                return;
             }
         }
-        // ----------------------------------------------
 
         const logoRect = logoWrapper.getBoundingClientRect();
         const logoCenterX = logoRect.left + logoRect.width / 2;
@@ -204,104 +146,59 @@ function toKannadaNum(num) {
 function initBackgroundText() {
     const container = document.getElementById('bg-text-container');
     if (!container) return;
-
-    // Clear existing content just in case
     container.innerHTML = '';
-
     const textToRepeat = "ಸುಸ್ವಾಗತ";
-    // Increase repetitions to ensure wide screens are filled even after moving
     const reps = 20;
-
-    // --- DYNAMIC LAYOUT CALCULATION ---
-    // Goal: Fit rows perfectly or center them without cutting off text glyphs.
-
-    // 1. Define Typography
     const fontSize = 128;
-    // Updated to 1.2 per request (tighter fit, careful of ascenders/descenders)
     const lineHeight = 1.4;
     const rowHeightPx = fontSize * lineHeight;
-
-    // 2. Measure Viewport
     const vh = window.innerHeight;
-
-    // 3. Calculate how many rows fit
-    // Use Math.ceil to ensure we cover the screen.
-    // If it's close to fitting an extra one, we add it to be safe.
     let rowCount = Math.ceil(vh / rowHeightPx);
-    // Ensure a minimum for safety
     if (rowCount < 3) rowCount = 3;
 
-    // 4. Apply Container Styles for Centering
     container.style.display = 'flex';
     container.style.flexDirection = 'column';
-    container.style.justifyContent = 'center'; // Centers the block of rows vertically
+    container.style.justifyContent = 'center';
     container.style.alignItems = 'center';
     container.style.overflow = 'hidden';
-    container.style.gap = '0px'; // We handle spacing via line-height
+    container.style.gap = '0px';
 
     for (let i = 0; i < rowCount; i++) {
         const row = document.createElement('div');
         row.classList.add('bg-text-row');
-
-        // --- INLINE STYLES FOR PERFECT FIT ---
-        // Overwrite CSS to ensure these specific dimensions hold true
         row.style.fontSize = `${fontSize}px`;
         row.style.lineHeight = `${lineHeight}`;
-        row.style.height = `${rowHeightPx}px`; // Explicit height
+        row.style.height = `${rowHeightPx}px`;
         row.style.display = 'flex';
-        row.style.alignItems = 'center'; // Vertically align text within the row
+        row.style.alignItems = 'center';
         row.style.whiteSpace = 'nowrap';
-        row.style.flexShrink = '0'; // Prevent squishing
-
-        // Determine direction: even rows L->R, odd rows R->L
-        // (Index 0 is first row -> L->R)
+        row.style.flexShrink = '0';
         const isLeftToRight = (i % 2 === 0);
 
-        if (isLeftToRight) {
-            row.classList.add('row-ltr');
-        } else {
-            row.classList.add('row-rtl');
-        }
+        if (isLeftToRight) { row.classList.add('row-ltr'); }
+        else { row.classList.add('row-rtl'); }
 
-        // Fill row content
         let html = '';
         for (let j = 0; j < reps; j++) {
-            // Add padding to separate words visually
             html += `<span class="bg-text-item" style="padding-right: 80px; display: inline-block;">${textToRepeat}</span>`;
         }
         row.innerHTML = html;
         container.appendChild(row);
 
-        // --- ANIMATION ---
-        // We use xPercent: -50 to 0 (or similar) to create infinite effect.
-
         if (isLeftToRight) {
-            // Move Left to Right: Start at -25% and move to 0 (assuming enough reps to cover)
-            gsap.fromTo(row,
-                { xPercent: -25 },
-                { xPercent: 0, ease: "none", duration: 40, repeat: -1 }
-            );
+            gsap.fromTo(row, { xPercent: -25 }, { xPercent: 0, ease: "none", duration: 40, repeat: -1 });
         } else {
-            // Move Right to Left: Start at 0 and move to -25%
-            gsap.fromTo(row,
-                { xPercent: 0 },
-                { xPercent: -25, ease: "none", duration: 40, repeat: -1 }
-            );
+            gsap.fromTo(row, { xPercent: 0 }, { xPercent: -25, ease: "none", duration: 40, repeat: -1 });
         }
     }
 }
 
-// Add resize listener to re-calculate rows if window changes significantly
 let resizeTimeout;
 window.addEventListener('resize', () => {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
-        // Only re-init if the container is currently visible or active
         const container = document.getElementById('bg-text-container');
         if (container && container.style.opacity !== '0') {
-             // We can re-run init, but we must be careful not to kill the animation state abruptly if visible.
-             // For now, simpler to just let it be or refresh.
-             // Re-running initBackgroundText() is safe enough for a resize.
              initBackgroundText();
         }
     }, 200);
@@ -310,7 +207,6 @@ window.addEventListener('resize', () => {
 
 // --- GSAP ENTRANCE ANIMATION (First Load) ---
 function runIntroAnimation() {
-    // Initialize background text (starts hidden via CSS)
     initBackgroundText();
 
     const tl = gsap.timeline({ onComplete: startAppLogic });
@@ -318,29 +214,32 @@ function runIntroAnimation() {
     const kannadaElement = '.bottom-text';
     const bgTextContainer = '#bg-text-container';
 
-    // Initial Setters: All elements start fuzzy (blur) and hidden
+    // 1. Initial Setters
     gsap.set(".container", { xPercent: -50, yPercent: -50 });
     gsap.set([".loading-text-left", ".loading-text-right"], { yPercent: -50 });
     gsap.set(kannadaElement, { xPercent: -50, autoAlpha: 0, y: 50, filter: "blur(10px)" });
-    gsap.set([".welcome-text", ".enter-button"], { autoAlpha: 0, y: 50, filter: "blur(10px)" });
+
+    // --- UPDATED: Select elements inside the distinct #welcome-sequence ---
+    gsap.set(["#welcome-sequence .welcome-text", "#welcome-sequence .enter-button"], { autoAlpha: 0, y: 50, filter: "blur(10px)" });
+
     gsap.set("#wreath-animation", { autoAlpha: 0, filter: "blur(10px)" });
     gsap.set("#home-screen", { autoAlpha: 0 });
     gsap.set("#scroll-instruction", { autoAlpha: 0, filter: "blur(10px)" });
-    gsap.set(bgTextContainer, { autoAlpha: 0, filter: "blur(15px)" }); // Start hidden & Blurred
+    gsap.set(bgTextContainer, { autoAlpha: 0, filter: "blur(15px)" });
 
-    // Ensure Top Nav (now just the trigger) & Bottom Nav are hidden initially
     gsap.set("#menu-trigger", { autoAlpha: 0, filter: "blur(10px)" });
     gsap.set("#bottom-nav-indicator", { autoAlpha: 0, y: 20, filter: "blur(10px)" });
 
     // Ensure final content is hidden from flow initially
-    gsap.set(".final-sequence-content", { display: "none" });
+    gsap.set("#welcome-sequence", { display: "none" });
+    gsap.set("#home-sequence", { display: "none" });
 
     // Hide def group initially
-    gsap.set(".def-group", { autoAlpha: 0, display: "none" });
+    // gsap.set(".def-group", { autoAlpha: 0, display: "none" }); // handled by #home-sequence
 
     gsap.set(topRowElements, { autoAlpha: 0, y: 50, filter: "blur(10px)" });
 
-    // Animation: Fade in + Unblur
+    // Animation
     tl.to(topRowElements, {
         duration: 2.0,
         autoAlpha: 1,
@@ -358,18 +257,16 @@ function runIntroAnimation() {
         ease: "expo.inOut",
         clearProps: "filter"
     }, "-=1.9");
-
-    // NOTE: Background text fade-in removed from here so it doesn't show during loading.
 }
 
 // --- GSAP EXIT ANIMATION (Loading -> Welcome) ---
 function runExitAnimation() {
-    const btn = document.querySelector('.enter-button');
-    btn.classList.remove('interactive');
+    const btn = document.querySelector('#welcome-sequence .enter-button');
+    if(btn) btn.classList.remove('interactive');
 
     const tl = gsap.timeline({
         onComplete: () => {
-            btn.classList.add('interactive');
+            if(btn) btn.classList.add('interactive');
         }
     });
 
@@ -377,17 +274,19 @@ function runExitAnimation() {
     const kannadaText = document.querySelector('.bottom-text');
     const leftText = document.querySelector('.loading-text-left');
     const rightText = document.querySelector('.loading-text-right');
-    const welcomeText = document.querySelector('.welcome-text');
-    const enterButton = document.querySelector('.enter-button');
-    const finalContent = document.querySelector('.final-sequence-content');
 
-    // 1. Prepare Layout Change
-    gsap.set(finalContent, { display: "flex", autoAlpha: 1 });
+    // --- UPDATED: Select Specific Welcome Elements ---
+    const welcomeText = document.querySelector('#welcome-sequence .welcome-text');
+    const enterButton = document.querySelector('#welcome-sequence .enter-button');
+    const welcomeSequence = document.querySelector('#welcome-sequence');
+
+    // 1. Prepare Layout Change: Show the Welcome Sequence
+    gsap.set(welcomeSequence, { display: "flex", autoAlpha: 1 });
 
     // 2. Calculate Centering Offset
-    const contentStyle = window.getComputedStyle(finalContent);
+    const contentStyle = window.getComputedStyle(welcomeSequence);
     const marginTop = parseFloat(contentStyle.marginTop);
-    const addedHeight = finalContent.offsetHeight + marginTop;
+    const addedHeight = welcomeSequence.offsetHeight + marginTop;
     const centerShiftCorrection = addedHeight / 2;
 
     // Apply immediate correction
@@ -395,7 +294,6 @@ function runExitAnimation() {
 
     // Set initial state for text elements (Blurred)
     gsap.set([welcomeText, enterButton], { y: 20, autoAlpha: 0, filter: "blur(10px)" });
-    // Set initial state for Wreath (Blurred)
     gsap.set("#wreath-animation", { autoAlpha: 0, filter: "blur(10px)" });
 
     const finalColor = preloadColors[lastColorIndex];
@@ -411,8 +309,7 @@ function runExitAnimation() {
         ease: "expo.inOut"
     }, "exitStart")
 
-    // --- NEW: FADE IN BACKGROUND TEXT HERE (Welcome Phase) ---
-    // Now with Blur Effect & Early timing
+    // FADE IN BACKGROUND TEXT
     .to('#bg-text-container', {
         duration: 2.5,
         autoAlpha: 1,
@@ -426,8 +323,7 @@ function runExitAnimation() {
         ease: "expo.inOut"
     }, "exitStart")
 
-    // ENTER NEW TEXT: Unblur In
-    // DELAYED start (+=1.1) to let the background text appear first
+    // ENTER NEW TEXT
     .to([welcomeText, enterButton], {
         duration: 1.2,
         y: 0,
@@ -440,7 +336,7 @@ function runExitAnimation() {
 
     .call(() => { if (wreathAnim) wreathAnim.play(); }, null, "exitStart+=0.8")
 
-    // ENTER WREATH: Unblur In
+    // ENTER WREATH
     .to("#wreath-animation", {
         duration: 1.5,
         autoAlpha: 1,
@@ -453,13 +349,18 @@ function runExitAnimation() {
 function enterSite() {
     // 1. SELECT ELEMENTS
     const logoWrapper = document.getElementById('logoWrapper');
-    const welcomeText = document.querySelector('.welcome-text');
-    const btn = document.querySelector('.enter-button');
     const wreath = document.getElementById('wreath-animation');
-    const defGroup = document.querySelector('.def-group');
     const mainWrapper = document.querySelector('.main-content-wrapper');
-    const textAnchor = document.querySelector('.text-anchor');
     const bgTextContainer = document.getElementById('bg-text-container');
+
+    // --- UPDATED SELECTORS FOR SPLIT STRUCTURE ---
+    const welcomeSequence = document.getElementById('welcome-sequence');
+    const welcomeText = welcomeSequence.querySelector('.welcome-text');
+    const btn = welcomeSequence.querySelector('.enter-button');
+
+    const homeSequence = document.getElementById('home-sequence');
+    const homeTitle = homeSequence.querySelector('.home-title'); // "Kannadiga" title
+    const textAnchor = homeSequence.querySelector('.text-anchor');
 
     // Disable button interaction
     btn.style.pointerEvents = 'none';
@@ -472,15 +373,13 @@ function enterSite() {
     const textClone = welcomeText.cloneNode(true);
     const btnClone = btn.cloneNode(true);
 
-    // Remove ID to avoid duplicates
+    // Remove IDs to avoid duplicates
     textClone.removeAttribute('id');
     btnClone.removeAttribute('id');
     btnClone.classList.remove('interactive');
 
-    // Helper: Position clones exactly where elements are visually on screen
     const setFixedStyles = (clone, rect, original) => {
         const compStyle = window.getComputedStyle(original);
-
         clone.style.position = 'fixed';
         clone.style.top = rect.top + 'px';
         clone.style.left = rect.left + 'px';
@@ -490,15 +389,12 @@ function enterSite() {
         clone.style.transform = 'none';
         clone.style.pointerEvents = 'none';
         clone.style.zIndex = '50';
-
-        // Preserve crucial text alignment props
         clone.style.textAlign = compStyle.textAlign;
         clone.style.display = compStyle.display;
         clone.style.alignItems = compStyle.alignItems;
         clone.style.justifyContent = compStyle.justifyContent;
         clone.style.fontFamily = compStyle.fontFamily;
         clone.style.fontSize = compStyle.fontSize;
-
         document.body.appendChild(clone);
     };
 
@@ -509,19 +405,19 @@ function enterSite() {
     const logoStartRect = logoWrapper.getBoundingClientRect();
 
     // 4. CHANGE STATE (Hide originals, Update Layout)
-    gsap.set([welcomeText, btn], { autoAlpha: 0 });
-    gsap.set(btn, { display: "none" });
+    // Instead of modifying text, we hide the Welcome container and show the Home container
+    gsap.set(welcomeSequence, { display: "none" });
+    gsap.set(homeSequence, { display: "flex", autoAlpha: 1 });
 
-    // Change Content
-    welcomeText.innerHTML = "ಕನ್ನಡಿಗ";
+    // FIX: Ensure the def-group container is visible (it has global CSS visibility:hidden)
+    const defGroup = homeSequence.querySelector('.def-group');
+    if (defGroup) gsap.set(defGroup, { autoAlpha: 1 });
 
-    // Change Layout to Left Aligned
+    // Change Layout to Left Aligned (affecting parent wrapper)
     gsap.set(mainWrapper, { alignItems: "flex-start" });
     gsap.set(textAnchor, { alignItems: "flex-start" });
-    gsap.set(welcomeText, { textAlign: "left", fontSize: "32px", margin: "0", padding: "0" });
 
-    // Show Definitions
-    gsap.set(defGroup, { display: "flex", autoAlpha: 1, marginTop: "20px" });
+    // Note: homeTitle styling is handled in CSS/HTML structure now, not JS injection
 
     // 5. CAPTURE FINAL STATE OF LOGO
     const logoEndRect = logoWrapper.getBoundingClientRect();
@@ -534,7 +430,7 @@ function enterSite() {
     gsap.set(logoWrapper, { x: deltaX, y: deltaY });
 
     // Prepare New Elements (Blurred & Hidden)
-    gsap.set(welcomeText, { y: 20, x: 0, autoAlpha: 0, filter: "blur(10px)" });
+    gsap.set(homeTitle, { y: 20, x: 0, autoAlpha: 0, filter: "blur(10px)" });
     gsap.set([".def-phonetic", ".def-noun", ".def-desc"], { autoAlpha: 0, y: 15, filter: "blur(8px)" });
 
     // 8. ANIMATE (Play)
@@ -548,7 +444,6 @@ function enterSite() {
             enableSmoothScroll();
 
              // --- SYNCED APPEARANCE ---
-             // Changed: #top-nav is now #menu-trigger
              gsap.to(["#menu-trigger", "#scroll-instruction", "#bottom-nav-indicator"], {
                 autoAlpha: 1,
                 y: 0,
@@ -562,69 +457,33 @@ function enterSite() {
     // --- PHASE 1: EXITING ELEMENTS ---
 
     // BACKGROUND TEXT: Fade Out
-    tl.to(bgTextContainer, {
-        duration: 0.8,
-        autoAlpha: 0,
-        ease: "power2.in"
-    }, 0);
+    tl.to(bgTextContainer, { duration: 0.8, autoAlpha: 0, ease: "power2.in" }, 0);
 
-    // WREATH: Reverse immediately
+    // WREATH: Reverse
     if (wreathAnim) {
         wreathAnim.setDirection(-1);
         wreathAnim.setSpeed(0.6);
         wreathAnim.play();
     }
+    // WREATH: Fade Out
+    tl.to(wreath, { duration: 0.8, autoAlpha: 0, filter: "blur(15px)", ease: "expo.in" }, 0);
 
-    // WREATH: Fade Out & Blur INSTANTLY
-    tl.to(wreath, {
-        duration: 0.8,
-        autoAlpha: 0,
-        filter: "blur(15px)",
-        ease: "expo.in"
-    }, 0);
+    // TEXT CLONE: Fade Out
+    tl.to(textClone, { duration: 0.8, y: -40, autoAlpha: 0, filter: "blur(15px)", ease: "expo.in" }, 0);
 
-    // TEXT CLONE: Fade & Blur Out
-    tl.to(textClone, {
-        duration: 0.8,
-        y: -40,
-        autoAlpha: 0,
-        filter: "blur(15px)",
-        ease: "expo.in"
-    }, 0);
-
-    // BUTTON CLONE: Fade & Blur Out
-    tl.to(btnClone, {
-        duration: 0.8,
-        y: 30,
-        autoAlpha: 0,
-        scale: 0.9,
-        filter: "blur(15px)",
-        ease: "expo.in"
-    }, 0);
+    // BUTTON CLONE: Fade Out
+    tl.to(btnClone, { duration: 0.8, y: 30, autoAlpha: 0, scale: 0.9, filter: "blur(15px)", ease: "expo.in" }, 0);
 
     // --- PHASE 2: MOVING ELEMENTS ---
-
     // LOGO: Slide to new position
-    tl.to(logoWrapper, {
-        x: 0,
-        y: 0,
-        duration: 1.0,
-        ease: "expo.inOut"
-    }, 0);
+    tl.to(logoWrapper, { x: 0, y: 0, duration: 1.0, ease: "expo.inOut" }, 0);
 
     // --- PHASE 3: ENTERING ELEMENTS ---
-    // Start slightly after logo moves
 
-    // NEW TEXT (Title): Slide Up & Unblur
-    tl.to(welcomeText, {
-        y: 0,
-        autoAlpha: 1,
-        filter: "blur(0px)",
-        duration: 1.0,
-        ease: "expo.out"
-    }, 0.6);
+    // HOME TITLE: Slide Up & Unblur
+    tl.to(homeTitle, { y: 0, autoAlpha: 1, filter: "blur(0px)", duration: 1.0, ease: "expo.out" }, 0.6);
 
-    // DEFS: Cascade In & Unblur
+    // DEFS: Cascade In
     tl.to([".def-phonetic", ".def-noun", ".def-desc"], {
             duration: 1.0,
             y: 0,
@@ -632,8 +491,7 @@ function enterSite() {
             filter: "blur(0px)",
             stagger: 0.08,
             ease: "expo.out"
-        },
-        0.8
+        }, 0.8
     );
 }
 
@@ -691,25 +549,13 @@ class SmoothScroll {
     initBottomNav() {
         if (!this.navContainer) return;
         this.navContainer.innerHTML = '';
-
-        // Remove gap from container to handle spacing via wrappers
-        // effectively maximizing the hit area between items.
         this.navContainer.style.gap = '0px';
 
-        // Select elements to dim
         const elementsToDim = "#scroll-viewport, #menu-trigger, #home-screen";
 
-        // IMPORTANT: We moved the dimming listeners FROM the container TO the wrappers
-        // to ensure empty padding space in the container does not trigger the effect.
-
         this.sections.forEach((section, index) => {
-            // 1. Create Wrapper (Hit Area)
-            // This element creates a larger invisible target around the stick
             const wrapper = document.createElement('div');
             wrapper.classList.add('nav-line-wrapper');
-
-            // Style wrapper to fill the gap space (12px total width per item)
-            // and full height of the container (32px).
             wrapper.style.width = '12px';
             wrapper.style.height = '100%';
             wrapper.style.display = 'flex';
@@ -718,83 +564,44 @@ class SmoothScroll {
             wrapper.style.cursor = 'pointer';
             wrapper.style.position = 'relative';
 
-            // 2. Create Visual Line
             const line = document.createElement('div');
             line.classList.add('nav-line');
-            // Remove pointer events from the visual line so it doesn't
-            // interfere with the wrapper's mouse events
             line.style.pointerEvents = 'none';
 
-            // Interaction: Mouse Enter (on Wrapper)
             wrapper.addEventListener('mouseenter', () => {
                 this.navState.isHovering = true;
                 this.navState.hoveredIndex = index;
                 this.updateNavLabel(index, true);
-
-                // --- NEW: Trigger Global Dimming here ---
-                gsap.to(elementsToDim, {
-                    opacity: 0.1,
-                    filter: "blur(4px)",
-                    duration: 0.5,
-                    ease: "power2.out",
-                    overwrite: "auto"
-                });
+                gsap.to(elementsToDim, { opacity: 0.1, filter: "blur(4px)", duration: 0.5, ease: "power2.out", overwrite: "auto" });
             });
 
-            // Interaction: Mouse Leave (on Wrapper)
             wrapper.addEventListener('mouseleave', (e) => {
                  this.navState.isHovering = false;
                  this.navState.hoveredIndex = -1;
                  this.updateNavLabel(-1, false);
-
-                 // --- NEW: Restore Global Dimming (Smart Check) ---
-                 // If we are moving directly into another wrapper (gapless), do NOT restore yet.
-                 // This prevents flickering.
-                 if (e.relatedTarget && e.relatedTarget.closest('.nav-line-wrapper')) {
-                     return;
-                 }
-
-                 gsap.to(elementsToDim, {
-                    opacity: 1,
-                    filter: "blur(0px)",
-                    duration: 0.5,
-                    ease: "power2.out",
-                    overwrite: "auto"
-                });
+                 if (e.relatedTarget && e.relatedTarget.closest('.nav-line-wrapper')) { return; }
+                 gsap.to(elementsToDim, { opacity: 1, filter: "blur(0px)", duration: 0.5, ease: "power2.out", overwrite: "auto" });
             });
 
-            // Interaction: Click to Scroll (on Wrapper)
             wrapper.addEventListener('mousedown', (e) => {
-                // STOP PROPAGATION so the drag logic doesn't fire
                 e.stopPropagation();
-
-                // Calculate center of the target section
                 const targetX = section.offsetLeft + (section.offsetWidth / 2) - (window.innerWidth / 2);
-
-                // Clamp target
                 let clampedTarget = Math.max(0, Math.min(targetX, this.maxScroll));
 
-                // TRIGGER AUTO SCROLL ANIMATION
                 this.isAutoScrolling = true;
-
-                // Animate both target and current so physics don't fight it
-                // CHANGED: "expo.out" -> "power3.out" for a softer landing
-                // CHANGED: 2.5s -> 2.0s to match curve feel
                 gsap.to(this, {
                     current: clampedTarget,
                     target: clampedTarget,
                     duration: 2.5,
                     ease: "power4.out",
                     overwrite: "auto",
-                    onComplete: () => {
-                        this.isAutoScrolling = false;
-                    }
+                    onComplete: () => { this.isAutoScrolling = false; }
                 });
             });
 
             wrapper.appendChild(line);
             this.navContainer.appendChild(wrapper);
-            this.navLines.push(line); // We still animate the visual line
+            this.navLines.push(line);
         });
     }
 
@@ -810,7 +617,6 @@ class SmoothScroll {
         }
     }
 
-    // Run every frame to animate lines
     updateNavVisuals() {
         const viewportCenter = window.innerWidth / 2;
 
@@ -818,76 +624,45 @@ class SmoothScroll {
             let targetHeight = 20;
             let targetOpacity = 0.1;
 
-            // --- LOGIC BRANCH: HOVER vs SCROLL ---
-
             if (this.navState.isHovering) {
-                // MOUSE INTERACTION MODE
                 const dist = Math.abs(index - this.navState.hoveredIndex);
-
-                if (dist === 0) {
-                    targetHeight = 32;
-                    targetOpacity = 1.0;
-                } else if (dist === 1) {
-                    targetHeight = 24;
-                    targetOpacity = 0.3;
-                }
+                if (dist === 0) { targetHeight = 32; targetOpacity = 1.0; }
+                else if (dist === 1) { targetHeight = 24; targetOpacity = 0.3; }
 
             } else {
-                // SCROLL SYNC MODE
-
-                // 1. Get Geometry
                 const sectionLeft = this.sections[index].offsetLeft;
                 const sectionWidth = this.sections[index].offsetWidth;
                 const sectionCenter = sectionLeft + (sectionWidth / 2);
-
-                // 2. Calculate Distance
                 const visualCenter = sectionCenter - this.current;
                 const dist = Math.abs(visualCenter - viewportCenter);
-
-                // 3. Convert to "Unit Distance" (1 unit = 1 screen width)
                 const distRatio = dist / window.innerWidth;
-
-                // 4. Gaussian Function for Organic Falloff
                 const k = 3.0;
                 let activation = Math.exp(-k * Math.pow(distRatio, 2));
 
-                // 5. EDGE CASE HANDLING (Sticky Ends)
-                if (index === 0 && visualCenter > viewportCenter) {
-                    activation = 1.0;
-                }
-                else if (index === this.sections.length - 1 && visualCenter < viewportCenter) {
-                    activation = 1.0;
-                }
+                if (index === 0 && visualCenter > viewportCenter) { activation = 1.0; }
+                else if (index === this.sections.length - 1 && visualCenter < viewportCenter) { activation = 1.0; }
 
-                // 6. Map Activation (0 to 1) to Visual Properties
                 targetHeight = 20;
                 targetOpacity = 0.1 + (0.9 * Math.pow(activation, 1.5));
             }
 
-            // Apply styles using simple LERP for smoothness
             const currentH = parseFloat(line.style.height) || 20;
             const currentO = parseFloat(line.style.opacity) || 0.1;
-
             const lerp = (start, end, amt) => (1 - amt) * start + amt * end;
-
-            // Higher interpolation factor for hover for snappiness, lower for scroll
             const speed = this.navState.isHovering ? 0.2 : 0.1;
 
             line.style.height = `${lerp(currentH, targetHeight, speed)}px`;
             line.style.opacity = lerp(currentO, targetOpacity, speed);
         });
 
-        // --- SQUEEZE NAV INDICATOR ON OVERSCROLL ---
         if (this.navIndicator) {
              let scale = 1.0;
              const squeezeFactor = 0.0005;
-
              if (this.current < 0) {
                  scale = Math.max(0.9, 1 - (Math.abs(this.current) * squeezeFactor));
              } else if (this.current > this.maxScroll) {
                  scale = Math.max(0.9, 1 - ((this.current - this.maxScroll) * squeezeFactor));
              }
-
              this.navIndicator.style.transform = `translateX(-50%) scale(${scale})`;
         }
     }
@@ -895,21 +670,13 @@ class SmoothScroll {
     init() {
         this.updateDimensions();
         window.addEventListener('resize', () => this.updateDimensions());
-
-        // Wheel Event
         window.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
-
-        // Drag Events
         window.addEventListener('mousedown', (e) => this.onDown(e));
         window.addEventListener('touchstart', (e) => this.onDown(e.touches[0]), { passive: false });
-
         window.addEventListener('mousemove', (e) => this.onMove(e));
         window.addEventListener('touchmove', (e) => this.onMove(e.touches[0]), { passive: false });
-
         window.addEventListener('mouseup', () => this.onUp());
         window.addEventListener('touchend', () => this.onUp());
-
-        // Start Loop
         this.animate();
     }
 
@@ -918,21 +685,12 @@ class SmoothScroll {
             gsap.killTweensOf(this);
             this.isAutoScrolling = false;
         }
-
         let delta = e.deltaY;
-
-        if (this.target < 0 || this.target > this.maxScroll) {
-            delta *= this.elasticity;
-        }
-
+        if (this.target < 0 || this.target > this.maxScroll) { delta *= this.elasticity; }
         this.target += delta;
-
         this.isWheeling = true;
         if (this.wheelTimeout) clearTimeout(this.wheelTimeout);
-
-        this.wheelTimeout = setTimeout(() => {
-            this.isWheeling = false;
-        }, 100);
+        this.wheelTimeout = setTimeout(() => { this.isWheeling = false; }, 100);
     }
 
     onDown(e) {
@@ -940,7 +698,6 @@ class SmoothScroll {
             gsap.killTweensOf(this);
             this.isAutoScrolling = false;
         }
-
         this.isDragging = true;
         this.startX = e.clientX;
         this.dragStartScroll = this.target;
@@ -949,13 +706,10 @@ class SmoothScroll {
 
     onMove(e) {
         if (!this.isDragging) return;
-
         const delta = (e.clientX - this.startX) * this.dragSpeed;
         this.target = this.dragStartScroll - delta;
-
-        if (this.target < 0) {
-            this.target = this.target * this.elasticity;
-        } else if (this.target > this.maxScroll) {
+        if (this.target < 0) { this.target = this.target * this.elasticity; }
+        else if (this.target > this.maxScroll) {
             const extra = this.target - this.maxScroll;
             this.target = this.maxScroll + (extra * this.elasticity);
         }
@@ -967,7 +721,6 @@ class SmoothScroll {
     }
 
     animate() {
-        // 1. Snap Target Back to Bounds if not interacting
         if (!this.isDragging && !this.isWheeling && !this.isAutoScrolling) {
              if (this.target < 0) {
                  this.target += (0 - this.target) * this.springFactor;
@@ -978,41 +731,24 @@ class SmoothScroll {
              }
         }
 
-        // 2. Interpolate Current towards Target (Momentum)
         if (!this.isAutoScrolling) {
             this.current += (this.target - this.current) * this.friction;
         }
 
-        // Optimization
         if (Math.abs(this.target - this.current) < 0.05 && !this.isDragging && !this.isWheeling && !this.isAutoScrolling) {
             this.current = this.target;
         }
 
-        // 3. Instruction Text Logic (Hide on Scroll)
         if (this.current > 50 && !this.isInstructionHidden) {
             this.isInstructionHidden = true;
-            gsap.to("#scroll-instruction", {
-                autoAlpha: 0,
-                filter: "blur(10px)",
-                duration: 0.5,
-                ease: "power2.out"
-            });
+            gsap.to("#scroll-instruction", { autoAlpha: 0, filter: "blur(10px)", duration: 0.5, ease: "power2.out" });
         } else if (this.current <= 50 && this.isInstructionHidden) {
             this.isInstructionHidden = false;
-            gsap.to("#scroll-instruction", {
-                autoAlpha: 1,
-                filter: "blur(0px)",
-                duration: 0.5,
-                ease: "power2.out"
-            });
+            gsap.to("#scroll-instruction", { autoAlpha: 1, filter: "blur(0px)", duration: 0.5, ease: "power2.out" });
         }
 
-        // 4. Update Bottom Navigation (Physics)
         this.updateNavVisuals();
-
-        // 5. Apply Transform
         this.track.style.transform = `translate3d(${-this.current}px, 0, 0)`;
-
         this.rafId = requestAnimationFrame(() => this.animate());
     }
 }
