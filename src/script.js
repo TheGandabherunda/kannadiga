@@ -193,14 +193,231 @@ function initBackgroundText() {
     }
 }
 
+// --- OPTIMIZED: KANNADA CONCENTRIC CIRCLES (CACHED SPRITES + MATRIX MATH) ---
+let kannadaCtx = null;
+let kannadaRings = [];
+let kannadaCanvasWidth = 0;
+let kannadaCanvasHeight = 0;
+let isTickerRunning = false;
+let textSprite = null; // Cached image of the text
+let textSpriteWidth = 0;
+let textSpriteHeight = 0;
+
+// 1. Create a "Rubber Stamp" of the text (Sprite)
+function createTextSprite(text, fontSize) {
+    const spriteCanvas = document.createElement('canvas');
+    const ctx = spriteCanvas.getContext('2d');
+
+    // Set Font to measure
+    ctx.font = `${fontSize}px 'Noto Sans Kannada UI', sans-serif`;
+    const metrics = ctx.measureText(text);
+    const width = Math.ceil(metrics.width);
+    const height = Math.ceil(fontSize * 1.5); // Buffer for height
+
+    // Resize canvas to fit text exactly
+    spriteCanvas.width = width;
+    spriteCanvas.height = height;
+
+    // Draw text once onto this tiny canvas
+    // We apply opacity HERE, so we don't calculate it every frame
+    ctx.font = `${fontSize}px 'Noto Sans Kannada UI', sans-serif`;
+    ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "center";
+    ctx.fillText(text, width / 2, height / 2);
+
+    return { canvas: spriteCanvas, width, height };
+}
+
+function createKannadaRings() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const maxRadius = Math.sqrt(width * width + height * height) / 2;
+
+    // Configuration
+    const fontSize = 16; // Increased to 20
+    const ringSpacing = 32; // Increased to 32 (gap + font size)
+    const textStr = " ಕನ್ನಡಿಗ  •";
+
+    // Force sprite regeneration for new size
+    textSprite = null;
+
+    // Generate the sprite if not exists or if needed
+    if (!textSprite) {
+        const spriteData = createTextSprite(textStr, fontSize);
+        textSprite = spriteData.canvas;
+        textSpriteWidth = spriteData.width;
+        textSpriteHeight = spriteData.height;
+    }
+
+    // Initialize Rings Data
+    kannadaRings = [];
+    let currentRadius = 100;
+    let index = 0;
+
+    // Constant rotation speed (radians per frame)
+    const constantSpeed = 0.0015;
+
+    // Using primitive loop for speed
+    while (currentRadius < maxRadius + 100) {
+        const circumference = 2 * Math.PI * currentRadius;
+        const repeats = Math.floor(circumference / textSpriteWidth);
+        const angleStep = (Math.PI * 2) / repeats;
+
+        // Rotational Speed: CONSTANT for all rings, just alternating direction
+        const direction = index % 2 === 0 ? 1 : -1;
+
+        kannadaRings.push({
+            radius: currentRadius,
+            repeats: repeats,
+            angleStep: angleStep,
+            currentAngle: 0,
+            speed: direction * constantSpeed
+        });
+
+        currentRadius += ringSpacing;
+        index++;
+    }
+}
+
+function renderKannadaCircles() {
+    if (!kannadaCtx || !textSprite) return;
+
+    // Optimization: Skip if opacity is 0 (hidden)
+    const container = document.getElementById('kannada-circles-container');
+    if (!container || parseFloat(window.getComputedStyle(container).opacity) < 0.01) {
+        return;
+    }
+
+    // Clear Screen
+    // Note: 'kannadaCanvasWidth' handles high DPI, but coordinate system is scaled.
+    // We use setTransform(1,0,0,1,0,0) to reset to pixel coords for clearing.
+    kannadaCtx.setTransform(1, 0, 0, 1, 0, 0);
+    kannadaCtx.clearRect(0, 0, kannadaCtx.canvas.width, kannadaCtx.canvas.height);
+
+    const centerX = kannadaCanvasWidth / 2; // Logic center (not pixel center if scaled)
+    const centerY = kannadaCanvasHeight / 2;
+
+    // Apply scaling for High DPI screens
+    const dpr = window.devicePixelRatio || 1;
+
+    // --- BATCH DRAWING LOOP ---
+    // We iterate through every ring and every text segment.
+    // Instead of save/restore, we calculate Matrix Transforms manually for speed.
+
+    const len = kannadaRings.length;
+    for (let i = 0; i < len; i++) {
+        const ring = kannadaRings[i];
+
+        // Update Rotation for the whole ring
+        ring.currentAngle += ring.speed;
+
+        const repeats = ring.repeats;
+        const radius = ring.radius;
+        const baseAngle = ring.currentAngle;
+        const angleStep = ring.angleStep;
+
+        for (let j = 0; j < repeats; j++) {
+            // 1. Calculate Position
+            const angle = baseAngle + (angleStep * j);
+
+            // Calc X/Y around the circle
+            const x = centerX + Math.cos(angle) * radius;
+            const y = centerY + Math.sin(angle) * radius;
+
+            // 2. Calculate Rotation (Tangential = Angle + 90deg)
+            const rotation = angle + (Math.PI / 2);
+
+            // 3. Matrix Math for setTransform(a, b, c, d, e, f)
+            // a=cos, b=sin, c=-sin, d=cos, e=x, f=y
+            // We multiply by DPR for position to handle Retina screens correctly
+            const cos = Math.cos(rotation);
+            const sin = Math.sin(rotation);
+
+            // Set Transform directly (Fastest way to draw rotated images)
+            kannadaCtx.setTransform(
+                cos * dpr,  sin * dpr,
+                -sin * dpr, cos * dpr,
+                x * dpr,    y * dpr
+            );
+
+            // 4. Draw Sprite (centered)
+            kannadaCtx.drawImage(textSprite, -textSpriteWidth / 2, -textSpriteHeight / 2);
+        }
+    }
+
+    // --- RADIAL GRADIENT MASK (Fade Out Edges) ---
+    // Reset transform to physical pixels to draw full screen mask
+    kannadaCtx.setTransform(1, 0, 0, 1, 0, 0);
+
+    // Use destination-in to mask existing content
+    kannadaCtx.globalCompositeOperation = 'destination-in';
+
+    // Gradient geometry
+    const canvasW = kannadaCtx.canvas.width;
+    const canvasH = kannadaCtx.canvas.height;
+    const cx = canvasW / 2;
+    const cy = canvasH / 2;
+    const maxDist = Math.sqrt(cx * cx + cy * cy);
+
+    const gradient = kannadaCtx.createRadialGradient(cx, cy, 0, cx, cy, maxDist);
+    // Stops: Center opaque (1), edges transparent (0)
+    gradient.addColorStop(0, "rgba(0, 0, 0, 1)");
+    gradient.addColorStop(0.2, "rgba(0, 0, 0, 1)"); // Keep center clearly visible
+    gradient.addColorStop(1, "rgba(0, 0, 0, 0)"); // Fade to 0 at corners
+
+    kannadaCtx.fillStyle = gradient;
+    kannadaCtx.fillRect(0, 0, canvasW, canvasH);
+
+    // Reset composite operation for next frame
+    kannadaCtx.globalCompositeOperation = 'source-over';
+}
+
+function initKannadaCircles() {
+    const container = document.getElementById('kannada-circles-container');
+    if (!container) return;
+
+    let canvas = container.querySelector('canvas');
+    if (!canvas) {
+        canvas = document.createElement('canvas');
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        container.appendChild(canvas);
+
+        // Create context without 'alpha: false' to allow transparency, but hint optimization
+        kannadaCtx = canvas.getContext('2d', { alpha: true, desynchronized: true });
+
+        if (!isTickerRunning) {
+            gsap.ticker.add(renderKannadaCircles);
+            isTickerRunning = true;
+        }
+    }
+
+    const dpr = window.devicePixelRatio || 1;
+    // Store LOGICAL width/height for calculations
+    kannadaCanvasWidth = window.innerWidth;
+    kannadaCanvasHeight = window.innerHeight;
+
+    // Set PHYSICAL width/height for resolution
+    canvas.width = kannadaCanvasWidth * dpr;
+    canvas.height = kannadaCanvasHeight * dpr;
+
+    // Reset Sprite (to ensure correct sizing if needed)
+    textSprite = null;
+
+    createKannadaRings();
+}
+
+
 let resizeTimeout;
 window.addEventListener('resize', () => {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
-        const container = document.getElementById('bg-text-container');
-        if (container && container.style.opacity !== '0') {
+        const bgContainer = document.getElementById('bg-text-container');
+        if (bgContainer && bgContainer.style.opacity !== '0') {
              initBackgroundText();
         }
+        initKannadaCircles();
     }, 200);
 });
 
@@ -208,11 +425,15 @@ window.addEventListener('resize', () => {
 // --- GSAP ENTRANCE ANIMATION (First Load) ---
 function runIntroAnimation() {
     initBackgroundText();
+    initKannadaCircles(); // Generate circles but keep hidden
 
     const tl = gsap.timeline({ onComplete: startAppLogic });
     const topRowElements = ['.loading-text-left', '.container', '.loading-text-right'];
     const kannadaElement = '.bottom-text';
     const bgTextContainer = '#bg-text-container';
+
+    // Ensure circles container is hidden initially
+    gsap.set('#kannada-circles-container', { autoAlpha: 0 });
 
     // 1. Initial Setters
     gsap.set(".container", { xPercent: -50, yPercent: -50 });
@@ -349,6 +570,7 @@ function enterSite() {
     const wreath = document.getElementById('wreath-animation');
     const mainWrapper = document.querySelector('.main-content-wrapper');
     const bgTextContainer = document.getElementById('bg-text-container');
+    const kannadaCirclesContainer = document.getElementById('kannada-circles-container');
 
     // --- UPDATED SELECTORS FOR SPLIT STRUCTURE ---
     const welcomeView = document.getElementById('welcome-view');
@@ -453,8 +675,11 @@ function enterSite() {
 
     // --- PHASE 1: EXITING ELEMENTS ---
 
-    // BACKGROUND TEXT: Fade Out
+    // BACKGROUND TEXT: Fade Out (Linear Text)
     tl.to(bgTextContainer, { duration: 0.8, autoAlpha: 0, ease: "power2.in" }, 0);
+
+    // NEW BACKGROUND TEXT: Fade In (Concentric Circles)
+    tl.to(kannadaCirclesContainer, { duration: 1.5, autoAlpha: 1, ease: "power2.out" }, 0.5);
 
     // WREATH: Reverse
     if (wreathAnim) {
