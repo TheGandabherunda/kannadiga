@@ -728,8 +728,8 @@ svg {
 #nav-label {
     font-family: 'Noto Sans Kannada UI', sans-serif;
     font-size: 16px;
-    font-weight: 500;
-    color: rgba(0, 0, 0, 0.4);
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.2);
     opacity: 0;
     transform: translateY(4px);
     pointer-events: none;
