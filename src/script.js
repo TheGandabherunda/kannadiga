@@ -219,8 +219,8 @@ function runIntroAnimation() {
     gsap.set([".loading-text-left", ".loading-text-right"], { yPercent: -50 });
     gsap.set(kannadaElement, { xPercent: -50, autoAlpha: 0, y: 50, filter: "blur(10px)" });
 
-    // --- UPDATED: Select elements inside the distinct #welcome-sequence ---
-    gsap.set(["#welcome-sequence .welcome-text", "#welcome-sequence .enter-button"], { autoAlpha: 0, y: 50, filter: "blur(10px)" });
+    // --- UPDATED SELECTORS FOR NEW IDS ---
+    gsap.set(["#welcome-view .welcome-text", "#welcome-view .enter-button"], { autoAlpha: 0, y: 50, filter: "blur(10px)" });
 
     gsap.set("#wreath-animation", { autoAlpha: 0, filter: "blur(10px)" });
     gsap.set("#home-screen", { autoAlpha: 0 });
@@ -231,11 +231,8 @@ function runIntroAnimation() {
     gsap.set("#bottom-nav-indicator", { autoAlpha: 0, y: 20, filter: "blur(10px)" });
 
     // Ensure final content is hidden from flow initially
-    gsap.set("#welcome-sequence", { display: "none" });
-    gsap.set("#home-sequence", { display: "none" });
-
-    // Hide def group initially
-    // gsap.set(".def-group", { autoAlpha: 0, display: "none" }); // handled by #home-sequence
+    gsap.set("#welcome-view", { display: "none" });
+    gsap.set("#home-view", { display: "none" });
 
     gsap.set(topRowElements, { autoAlpha: 0, y: 50, filter: "blur(10px)" });
 
@@ -261,7 +258,7 @@ function runIntroAnimation() {
 
 // --- GSAP EXIT ANIMATION (Loading -> Welcome) ---
 function runExitAnimation() {
-    const btn = document.querySelector('#welcome-sequence .enter-button');
+    const btn = document.querySelector('#welcome-view .enter-button');
     if(btn) btn.classList.remove('interactive');
 
     const tl = gsap.timeline({
@@ -275,18 +272,18 @@ function runExitAnimation() {
     const leftText = document.querySelector('.loading-text-left');
     const rightText = document.querySelector('.loading-text-right');
 
-    // --- UPDATED: Select Specific Welcome Elements ---
-    const welcomeText = document.querySelector('#welcome-sequence .welcome-text');
-    const enterButton = document.querySelector('#welcome-sequence .enter-button');
-    const welcomeSequence = document.querySelector('#welcome-sequence');
+    // --- UPDATED: Select Specific Welcome Elements using new ID ---
+    const welcomeText = document.querySelector('#welcome-view .welcome-text');
+    const enterButton = document.querySelector('#welcome-view .enter-button');
+    const welcomeView = document.getElementById('welcome-view');
 
-    // 1. Prepare Layout Change: Show the Welcome Sequence
-    gsap.set(welcomeSequence, { display: "flex", autoAlpha: 1 });
+    // 1. Prepare Layout Change: Show the Welcome View
+    gsap.set(welcomeView, { display: "flex", autoAlpha: 1 });
 
     // 2. Calculate Centering Offset
-    const contentStyle = window.getComputedStyle(welcomeSequence);
+    const contentStyle = window.getComputedStyle(welcomeView);
     const marginTop = parseFloat(contentStyle.marginTop);
-    const addedHeight = welcomeSequence.offsetHeight + marginTop;
+    const addedHeight = welcomeView.offsetHeight + marginTop;
     const centerShiftCorrection = addedHeight / 2;
 
     // Apply immediate correction
@@ -354,13 +351,13 @@ function enterSite() {
     const bgTextContainer = document.getElementById('bg-text-container');
 
     // --- UPDATED SELECTORS FOR SPLIT STRUCTURE ---
-    const welcomeSequence = document.getElementById('welcome-sequence');
-    const welcomeText = welcomeSequence.querySelector('.welcome-text');
-    const btn = welcomeSequence.querySelector('.enter-button');
+    const welcomeView = document.getElementById('welcome-view');
+    const welcomeText = welcomeView.querySelector('.welcome-text');
+    const btn = welcomeView.querySelector('.enter-button');
 
-    const homeSequence = document.getElementById('home-sequence');
-    const homeTitle = homeSequence.querySelector('.home-title'); // "Kannadiga" title
-    const textAnchor = homeSequence.querySelector('.text-anchor');
+    const homeView = document.getElementById('home-view');
+    const homeTitle = homeView.querySelector('.home-title'); // "Kannadiga" title
+    const textAnchor = homeView.querySelector('.text-anchor');
 
     // Disable button interaction
     btn.style.pointerEvents = 'none';
@@ -406,11 +403,11 @@ function enterSite() {
 
     // 4. CHANGE STATE (Hide originals, Update Layout)
     // Instead of modifying text, we hide the Welcome container and show the Home container
-    gsap.set(welcomeSequence, { display: "none" });
-    gsap.set(homeSequence, { display: "flex", autoAlpha: 1 });
+    gsap.set(welcomeView, { display: "none" });
+    gsap.set(homeView, { display: "flex", autoAlpha: 1 });
 
     // FIX: Ensure the def-group container is visible (it has global CSS visibility:hidden)
-    const defGroup = homeSequence.querySelector('.def-group');
+    const defGroup = homeView.querySelector('.def-group');
     if (defGroup) gsap.set(defGroup, { autoAlpha: 1 });
 
     // Change Layout to Left Aligned (affecting parent wrapper)

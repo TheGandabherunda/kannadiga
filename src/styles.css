@@ -22,14 +22,13 @@
 
 /* --- VARIABLES --- */
 :root {
-    /* Custom bounce timing for interactive elements */
     --bounce-timing: linear(0, 0.0282, 0.1054, 0.2195, 0.3584, 0.5107, 0.6659, 0.8149, 0.9506, 1.0676, 1.1625, 1.2335, 1.2805, 1.3046, 1.3083, 1.2944, 1.2666, 1.2285, 1.1839, 1.1362, 1.0885, 1.0435, 1.0032, 0.9691, 0.9421, 0.9225, 0.9102, 0.9048, 0.9055, 0.9113, 0.921, 0.9335, 0.9477, 0.9626, 0.9771, 0.9906, 1.0025, 1.0124, 1.0201, 1.0254, 1.0285, 1.0296, 1.0288, 1.0266, 1.0233, 1.0192, 1.0147, 1.0101, 1.0057, 1.0017, 0.9982, 0.9953, 0.9932, 0.9918, 0.991, 0.9909, 0.9913, 0.9921, 0.9932, 0.9945, 0.9959, 0.9973, 0.9986, 0.9998, 1.0009, 1.0017, 1.0023, 1.0026, 1.0028, 1.0028, 1.0026, 1.0024, 1.002, 1.0016, 1.0011, 1.0007, 1.0003, 0.9999, 0.9996, 0.9994, 0.9993, 0.9992, 0.9991, 0.9991, 0.9992, 0.9993, 0.9994, 0.9996, 0.9997, 0.9998, 0.9999, 1, 1.0001, 1.0002, 1.0002, 1.0003, 1.0003, 1.0003, 1.0002, 1.0002, 1);
 }
 
 /* --- GLOBAL RESET --- */
 * {
     box-sizing: border-box;
-    user-select: none; /* Improves dragging experience */
+    user-select: none;
 }
 
 ::selection {
@@ -49,7 +48,7 @@ body {
     height: 100vh;
     background-color: #F2EFE5;
     font-family: sans-serif;
-    overflow: hidden; /* Hide native scrollbars */
+    overflow: hidden;
     position: relative;
 }
 
@@ -59,21 +58,20 @@ body {
     top: 0;
     left: 0;
     width: 100vw;
-    height: 100vh; /* Fallback */
-    height: 100dvh; /* Dynamic Viewport Height for mobile browsers */
+    height: 100vh;
+    height: 100dvh;
     background-color: #F2EFE5;
-    z-index: 99999; /* Highest priority */
-    display: flex; /* Flex is default, toggled via media query */
+    z-index: 99999;
+    display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
     gap: 30px;
-    padding: 20px; /* Safe padding for edges */
+    padding: 20px;
 }
 
 #mobileLogoWrapper {
-    /* Use flex to ensure the SVG inside is centered perfectly */
     display: flex !important;
     justify-content: center;
     align-items: center;
@@ -106,15 +104,12 @@ body {
 }
 
 /* --- MEDIA QUERIES FOR VISIBILITY --- */
-
-/* Desktop (Large Screens): Hide warning, show app */
 @media (min-width: 1025px) {
     #mobile-warning {
         display: none !important;
     }
 }
 
-/* Mobile/Tablet (Small Screens): Show warning, hide app elements */
 @media (max-width: 1024px) {
     #scroll-viewport,
     #home-screen,
@@ -126,7 +121,6 @@ body {
 
 
 /* --- HORIZONTAL SCROLL INFRASTRUCTURE --- */
-
 #scroll-viewport {
     position: fixed;
     top: 0;
@@ -134,7 +128,6 @@ body {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    /* Ensure it handles touch events properly */
     touch-action: none;
 }
 
@@ -143,7 +136,7 @@ body {
     flex-wrap: nowrap;
     width: max-content;
     height: 100%;
-    will-change: transform; /* Performance hint */
+    will-change: transform;
 }
 
 .scroll-section {
@@ -154,11 +147,11 @@ body {
 
 /* SECTION 1: HOME (Original Container) */
 .home-section {
-    width: 100vw; /* Takes full screen initially */
+    width: 100vw;
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: hidden; /* Ensure background text doesn't spill */
+    overflow: hidden;
 }
 
 /* --- BACKGROUND SCROLLING TEXT --- */
@@ -168,30 +161,30 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 0; /* Behind main content (z-index 5) */
+    z-index: 0;
     display: flex;
     flex-direction: column;
     justify-content: center;
     pointer-events: none;
     overflow: hidden;
-    gap: 20px; /* Space between rows */
-    opacity: 0; /* Handled by JS for entry */
+    gap: 20px;
+    opacity: 0;
 }
 
 .bg-text-row {
     white-space: nowrap;
     font-family: 'Noto Sans Kannada UI', sans-serif;
     font-size: 128px;
-    font-weight: 700; /* Bold */
+    font-weight: 700;
     color: #000000;
-    opacity: 0.05; /* 5% opacity */
+    opacity: 0.05;
     display: flex;
     will-change: transform;
     line-height: 1.2;
 }
 
 .bg-text-item {
-    padding-right: 60px; /* Space between repeated words */
+    padding-right: 60px;
 }
 
 
@@ -228,7 +221,7 @@ body {
     align-items: center;
     pointer-events: none;
     backface-visibility: hidden;
-    z-index: 10; /* Ensure above BG text */
+    z-index: 10;
 }
 
 /* WRAPPER FOR LOGO + TEXT */
@@ -237,7 +230,7 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    width: 88px; /* Fixed width matching logo to prevent layout jumps */
+    width: 88px;
     align-items: center;
     pointer-events: none;
     overflow: visible;
@@ -271,7 +264,11 @@ body {
     transition: opacity 0.1s linear;
 }
 
-/* --- LOADING TEXT --- */
+/* --- LOADING VIEW STYLES --- */
+#loading-view {
+    /* Container for the loading-specific elements */
+}
+
 .loading-text-left {
     position: absolute;
     left: 32px;
@@ -310,18 +307,15 @@ body {
 /* --- SCROLL INSTRUCTION TEXT --- */
 #scroll-instruction {
     position: absolute;
-    right: 32px; /* Changed from left: 32px to right: 32px */
+    right: 32px;
     top: 50%;
     transform: translateY(-50%);
     font-family: 'Noto Sans Kannada UI', sans-serif;
-    font-weight: 400; /* Regular */
+    font-weight: 400;
     font-size: 16px;
     z-index: 20;
     pointer-events: none;
     text-align: right;
-
-    /* Shimmer / Color Logic */
-    /* Base color is approx 20%, Shimmer goes to approx 50% */
     background: linear-gradient(
         110deg,
         rgba(0, 0, 0, 0.25) 35%,
@@ -332,10 +326,7 @@ body {
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-
     animation: shimmer 3s infinite linear;
-
-    /* Initial Hidden State */
     opacity: 0;
     filter: blur(10px);
 }
@@ -346,8 +337,8 @@ body {
 }
 
 
-/* --- MAIN SEQUENCE CONTAINERS --- */
-.sequence-content {
+/* --- VIEW CONTENT (Welcome & Home Layouts) --- */
+.view-content {
     position: relative;
     margin-top: 28px;
     display: flex;
@@ -360,13 +351,12 @@ body {
     overflow: visible;
 }
 
-/* Initially hide new sections to prevent flash */
-#welcome-sequence {
+/* Section visibilities */
+#welcome-view {
     display: none;
 }
-#home-sequence {
+#home-view {
     display: none;
-    /* Replicate styling needed for home */
     align-items: flex-start;
 }
 
@@ -517,8 +507,8 @@ svg {
     top: 32px;
     right: 32px;
     z-index: 200;
-    width: 24px; /* Reduced from 40px */
-    height: 24px; /* Reduced from 40px */
+    width: 24px;
+    height: 24px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -530,8 +520,8 @@ svg {
 }
 
 #menu-trigger svg {
-    width: 20px; /* Reduced from 32px */
-    height: 20px; /* Reduced from 32px */
+    width: 20px;
+    height: 20px;
 }
 
 #menu-overlay {
@@ -540,16 +530,13 @@ svg {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-color: rgba(242, 239, 229, 0.9); /* #F2EFE5 at 90% */
+    background-color: rgba(242, 239, 229, 0.9);
     backdrop-filter: blur(10px);
     z-index: 150;
-
-    /* --- CENTERED LAYOUT (Both Vertical & Horizontal) --- */
     display: flex;
-    justify-content: center; /* Horizontal Center */
-    align-items: center;     /* Vertical Center */
+    justify-content: center;
+    align-items: center;
     padding-top: 0;
-
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
@@ -557,21 +544,13 @@ svg {
 
 /* --- NAVIGATION CONTAINER --- */
 .overlay-nav {
-    /* Layout */
     position: relative;
     display: flex;
     flex-direction: column;
     gap: 8px;
-
-    /* Left Align Items (Flex Start) - Text starts from left edge */
-    align-items: flex-start; /* Changed from center to flex-start */
-
-    /* Hug content so the column is only as wide as the widest text */
-    /* This allows the parent (#menu-overlay) to center this block perfectly */
+    align-items: flex-start;
     width: max-content;
-
-    /* Internal Text Alignment */
-    text-align: left; /* Changed from center to left */
+    text-align: left;
     pointer-events: none;
 }
 
@@ -579,13 +558,13 @@ svg {
 .nav-header {
     font-family: 'Noto Sans Kannada UI', sans-serif;
     font-size: 16px;
-    font-weight: 600; /* Semibold */
+    font-weight: 600;
     color: #000000;
-    margin-bottom: 16px; /* Extra spacing from items */
-    opacity: 0; /* Animated in via JS */
+    margin-bottom: 16px;
+    opacity: 0;
     transform: translateY(20px);
-    width: 100%; /* Ensure header takes full width */
-    text-align: left; /* Changed from center to left */
+    width: 100%;
+    text-align: left;
 }
 
 /* --- MENU LINKS STYLING --- */
@@ -594,49 +573,36 @@ svg {
     font-size: 16px;
     color: #000;
     text-decoration: none;
-    opacity: 0; /* Animated in via JS */
+    opacity: 0;
     transform: translateY(20px);
-
-    /* Layout: Left align the content */
     position: relative;
     display: flex;
-    justify-content: flex-start; /* Changed from center to flex-start */
+    justify-content: flex-start;
     align-items: center;
-
-    /* Width: let it fit content */
-    width: 100%; /* Ensure link takes full width of container */
-
-    /* Interaction */
+    width: 100%;
     pointer-events: auto;
 }
 
 /* --- HOVER FOCUS EFFECT --- */
-
-/* 1. Add smooth transition to ALL items (Header + Links) */
 .overlay-nav > * {
     transition: opacity 0.4s ease;
 }
 
-/* 2. Dim ALL items when container is hovered */
 .overlay-nav:hover > * {
     opacity: 0.1 !important;
 }
 
-/* 3. Keep SPECIFIC LINK being hovered at 100% */
 .overlay-nav a:hover {
     opacity: 1 !important;
 }
 
 
 /* --- INTERACTIVE TEXT EXPANSION (CENTERED ANCHOR) --- */
-
-/* Base Text (Static) */
 .base-text {
     font-weight: 400;
     white-space: nowrap;
 }
 
-/* Reveal Text Base Style */
 .reveal-text {
     position: absolute;
     white-space: nowrap;
@@ -647,7 +613,6 @@ svg {
     transition: opacity 0.3s ease;
 }
 
-/* LEFT SIDE TEXT */
 .reveal-text.left-side {
     right: 100%;
     margin-right: 24px;
@@ -655,7 +620,6 @@ svg {
     text-align: left;
 }
 
-/* RIGHT SIDE TEXT */
 .reveal-text.right-side {
     left: 100%;
     margin-left: 24px;
@@ -663,37 +627,30 @@ svg {
     text-align: right;
 }
 
-/* ARROW ICON */
 .arrow-icon {
     position: absolute;
     left: 100%;
     margin-left: 432px;
-
-    /* Font Settings for Material Symbols */
     font-family: 'Material Symbols Rounded';
     font-weight: normal;
     font-style: normal;
-    font-size: 16px; /* Standard Icon Size */
+    font-size: 16px;
     line-height: 1;
     letter-spacing: normal;
     text-transform: none;
     white-space: nowrap;
     direction: ltr;
-
     opacity: 0;
     transition: opacity 0.3s ease;
 }
 
 /* --- HOVER STATES FOR EXPANSION --- */
-
 .overlay-nav a:hover .reveal-text {
     opacity: 1;
-    /* REMOVED: transform: translateX(0); */
 }
 
 .overlay-nav a:hover .arrow-icon {
     opacity: 1;
-    /* REMOVED: transform: translateX(0) rotate(45deg); */
 }
 
 /* --- OVERLAY FOOTER (Terms & Imprint) --- */
@@ -705,10 +662,8 @@ svg {
     justify-content: center;
     align-items: center;
     gap: 10px;
-    pointer-events: none; /* Container passes clicks */
+    pointer-events: none;
     z-index: 160;
-
-    /* Animation Initial State */
     opacity: 0;
     transform: translateY(20px);
 }
@@ -716,16 +671,16 @@ svg {
 .footer-link {
     font-family: 'Noto Sans Kannada UI', sans-serif;
     font-size: 16px;
-    font-weight: 400; /* Regular */
-    color: #000000; /* Solid Black */
-    opacity: 0.2;   /* 20% Opacity */
-    text-decoration: none; /* No Underline */
+    font-weight: 400;
+    color: #000000;
+    opacity: 0.2;
+    text-decoration: none;
     pointer-events: auto;
     transition: opacity 0.3s ease;
 }
 
 .footer-link:hover {
-    opacity: 1; /* Full Opacity on Hover */
+    opacity: 1;
 }
 
 .footer-separator {
@@ -733,7 +688,7 @@ svg {
     font-size: 16px;
     font-weight: 400;
     color: #000000;
-    opacity: 0.2; /* Matches 20% opacity */
+    opacity: 0.2;
     pointer-events: none;
 }
 
@@ -749,8 +704,8 @@ svg {
     align-items: center;
     gap: 16px;
     z-index: 100;
-    pointer-events: none; /* Allows clicks to pass through gaps */
-    opacity: 0; /* Hidden initially */
+    pointer-events: none;
+    opacity: 0;
     visibility: hidden;
 }
 
@@ -759,20 +714,19 @@ svg {
     font-size: 16px;
     font-weight: 500;
     color: rgba(0, 0, 0, 0.4);
-    opacity: 0; /* Hidden by default */
+    opacity: 0;
     transform: translateY(4px);
-    /* transition: opacity 0.3s ease, transform 0.3s ease; <-- REMOVED FOR JS CONTROL */
     pointer-events: none;
     text-transform: uppercase;
 }
 
 #nav-lines {
     display: flex;
-    align-items: flex-end; /* Grow upwards */
+    align-items: flex-end;
     gap: 8px;
-    height: 32px; /* Fixed container height */
-    pointer-events: auto; /* Re-enable clicks on lines */
-    padding: 0 8px; /* Hitbox padding */
+    height: 32px;
+    pointer-events: auto;
+    padding: 0 8px;
 }
 
 .nav-line {
@@ -780,13 +734,7 @@ svg {
     border-radius: 999px;
     background-color: #000;
     cursor: pointer;
-    /* We do NOT use CSS transitions for height/opacity here because
-       JS handles the physics-based animation loop for smoother sync */
     will-change: height, opacity;
 }
 
-/* Hover effect on lines is handled via JS for consistency,
-   but we can add a slight brightness hover via CSS if needed */
-.nav-line:hover {
-    /* Optional auxiliary hover styles */
-}
+.nav-line:hover {}
