@@ -145,6 +145,12 @@ body {
     flex-shrink: 0;
 }
 
+/* --- UPDATED: CENTER LAST SECTION --- */
+/* (100vw Viewport - 60vw Section) / 2 = 20vw Margin */
+.scroll-section:last-child {
+    margin-right: 20vw;
+}
+
 /* SECTION 1: HOME (Original Container) */
 .home-section {
     width: 100vw;
@@ -211,7 +217,7 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    border-left: 1px dashed rgba(0,0,0,0.1);
+    /* Removed border-left */
     color: #000;
 }
 

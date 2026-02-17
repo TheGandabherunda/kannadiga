@@ -295,7 +295,8 @@ function createKannadaRings() {
             repeats: repeats,
             angleStep: angleStep,
             currentAngle: 0,
-            speed: direction * constantSpeed
+            speed: direction * constantSpeed,
+            opacity: 1 // Default to visible (unless manually hidden)
         });
 
         currentRadius += ringSpacing;
@@ -331,6 +332,12 @@ function renderKannadaCircles() {
     const len = kannadaRings.length;
     for (let i = 0; i < len; i++) {
         const ring = kannadaRings[i];
+
+        // Skip completely invisible rings
+        if (ring.opacity <= 0.001) continue;
+
+        // Set Ring Opacity (This multiplies with the sprite's own low alpha)
+        kannadaCtx.globalAlpha = ring.opacity;
 
         // Update Rotation for the whole ring
         ring.currentAngle += ring.speed;
@@ -372,6 +379,9 @@ function renderKannadaCircles() {
     // --- RADIAL GRADIENT MASK (Fade Out Edges) ---
     // Reset transform to physical pixels to draw full screen mask
     kannadaCtx.setTransform(1, 0, 0, 1, 0, 0);
+
+    // RESET ALPHA to 1 for the mask!
+    kannadaCtx.globalAlpha = 1;
 
     // Use destination-in to mask existing content
     kannadaCtx.globalCompositeOperation = 'destination-in';
@@ -599,6 +609,10 @@ function enterSite() {
     // Ensure the concentric circles use the final determined color for the dot
     createKannadaRings();
 
+    // --- RESET RINGS OPACITY TO 0 FOR ANIMATION ---
+    // We want to ripple them in, so we force them hidden initially.
+    kannadaRings.forEach(ring => ring.opacity = 0);
+
     // --- UPDATED SELECTORS FOR SPLIT STRUCTURE ---
     const welcomeView = document.getElementById('welcome-view');
     const welcomeText = welcomeView.querySelector('.welcome-text');
@@ -655,6 +669,10 @@ function enterSite() {
     gsap.set(welcomeView, { display: "none" });
     gsap.set(homeView, { display: "flex", autoAlpha: 1 });
 
+    // --- FIX: GENERATE NAVIGATION LINES IMMEDIATELY ---
+    // Previously called in onComplete, causing them to be missing during fade-in
+    enableSmoothScroll();
+
     // FIX: Ensure the def-group container is visible (it has global CSS visibility:hidden)
     const defGroup = homeView.querySelector('.def-group');
     if (defGroup) gsap.set(defGroup, { autoAlpha: 1 });
@@ -686,17 +704,7 @@ function enterSite() {
             btnClone.remove();
             gsap.set(wreath, { display: "none" });
 
-            // --- TRIGGER HORIZONTAL SCROLL HERE ---
-            enableSmoothScroll();
-
-             // --- SYNCED APPEARANCE ---
-             gsap.to(["#menu-trigger", "#scroll-instruction", "#bottom-nav-indicator"], {
-                autoAlpha: 1,
-                y: 0,
-                filter: "blur(0px)",
-                duration: 0.8,
-                ease: "power2.out"
-            });
+            // enableSmoothScroll(); <-- REMOVED FROM HERE
         }
     });
 
@@ -705,8 +713,17 @@ function enterSite() {
     // BACKGROUND TEXT: Fade Out (Linear Text)
     tl.to(bgTextContainer, { duration: 0.8, autoAlpha: 0, ease: "power2.in" }, 0);
 
-    // NEW BACKGROUND TEXT: Fade In (Concentric Circles)
-    tl.to(kannadaCirclesContainer, { duration: 1.5, autoAlpha: 1, ease: "power2.out" }, 0.5);
+    // NEW BACKGROUND TEXT: Fade In Container + Ripple Rings
+    // 1. Make container visible immediately
+    gsap.set(kannadaCirclesContainer, { autoAlpha: 1 });
+
+    // 2. Animate Rings One by One (Center to Outer)
+    tl.to(kannadaRings, {
+        duration: 2.0,
+        opacity: 1,
+        stagger: 0.1,
+        ease: "power2.out"
+    }, 0.5);
 
     // WREATH: Reverse
     if (wreathAnim) {
@@ -729,19 +746,29 @@ function enterSite() {
 
     // --- PHASE 3: ENTERING ELEMENTS ---
 
-    // HOME TITLE: Slide Up & Unblur
-    tl.to(homeTitle, { y: 0, autoAlpha: 1, filter: "blur(0px)", duration: 1.0, ease: "expo.out" }, 0.6);
+    // HOME TITLE: Slide Up & Unblur (Faster)
+    tl.to(homeTitle, { y: 0, autoAlpha: 1, filter: "blur(0px)", duration: 0.8, ease: "expo.out" }, 0.4);
 
-    // DEFS: Cascade In
+    // DEFS: Cascade In (Faster)
     tl.to([".def-phonetic", ".def-noun", ".def-desc"], {
-            duration: 1.0,
+            duration: 0.8,
             y: 0,
             autoAlpha: (i, t) => t.classList.contains('def-desc') ? 1 : 0.4,
             filter: "blur(0px)",
-            stagger: 0.08,
+            stagger: 0.05,
             ease: "expo.out"
-        }, 0.8
+        }, 0.5
     );
+
+    // UI ELEMENTS: Appear Together (Menu Trigger, Scroll Instruction, Nav Lines)
+    // Added delay: Starts at 1.2s (after title animation completes)
+    tl.to(["#menu-trigger", "#scroll-instruction", "#bottom-nav-indicator"], {
+        autoAlpha: 1,
+        y: 0,
+        filter: "blur(0px)",
+        duration: 0.6,
+        ease: "power2.out"
+    }, 1.2);
 }
 
 /* =========================================
