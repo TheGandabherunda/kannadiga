@@ -1,0 +1,78 @@
+/* --- HORIZONTAL SCROLL INFRASTRUCTURE --- */
+#scroll-viewport {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    touch-action: none;
+}
+
+#scroll-track {
+    display: flex;
+    flex-wrap: nowrap;
+    width: max-content;
+    height: 100%;
+    will-change: transform;
+}
+
+/* Mount points should not interfere with flex layout */
+#preloader-mount,
+#welcome-mount,
+#home-mount,
+#sections-mount {
+    display: contents;
+}
+
+.scroll-section {
+    height: 100%;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.scroll-section:last-child {
+    margin-right: 20vw;
+}
+
+.home-section {
+    width: 100vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.placeholder-section {
+    width: 60vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #000;
+}
+
+/* --- CONTAINER & LAYOUT --- */
+.container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+    backface-visibility: hidden;
+    z-index: 10;
+}
+
+.main-content-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 88px;
+    align-items: center;
+    pointer-events: none;
+    overflow: visible;
+}
