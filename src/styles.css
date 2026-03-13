@@ -746,17 +746,57 @@ svg {
     display: flex;
     align-items: flex-end;
     gap: 8px;
-    height: 26px;
+    height: 48px; /* Increased to accommodate both shape and line */
     pointer-events: auto;
     padding: 0 8px;
+    position: relative;
+}
+
+.nav-line-wrapper {
+    position: relative;
+    width: 12px;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    cursor: pointer;
 }
 
 .nav-line {
-    width: 3.5px;
+    width: 4px; /* Set to 4px for perfect centering within the 12px wrapper */
     border-radius: 999px;
     background-color: #000;
-    cursor: pointer;
+    pointer-events: none;
     will-change: height, opacity;
 }
 
-.nav-line:hover {}
+/* --- NAV HOVER SHAPES --- */
+.scroll-section .nav-shape {
+    display: none; /* Hide template shapes in sections */
+}
+
+.nav-shape {
+    position: absolute;
+    bottom: 30px; /* Aligned above the line's max height */
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    width: 6px; /* Set to an even width for consistent sub-pixel centering */
+    height: 6px;
+    background-color: #000;
+    pointer-events: none;
+    transition: transform 0.2s ease-out, opacity 0.15s ease-out, filter 0.15s ease-out;
+    opacity: 0;
+    filter: blur(2px);
+    will-change: transform, opacity, filter;
+}
+
+.nav-shape.triangle {
+    clip-path: polygon(0% 0%, 100% 0%, 50% 100%);
+    height: 4px; /* Maintain proportional triangle height */
+}
+
+.nav-line-wrapper:hover .nav-shape {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    filter: blur(0px);
+}

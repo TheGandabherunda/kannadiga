@@ -81,6 +81,10 @@ export default class SmoothScroll {
             line.classList.add('nav-line');
             line.style.pointerEvents = 'none';
 
+            // ADDED: Triangle for hover (Simplified: Always triangle now)
+            const shape = document.createElement('div');
+            shape.classList.add('nav-shape', 'triangle');
+
             wrapper.addEventListener('mouseenter', () => {
                 this.navState.isHovering = true;
                 this.navState.hoveredIndex = index;
@@ -114,6 +118,7 @@ export default class SmoothScroll {
             });
 
             wrapper.appendChild(line);
+            wrapper.appendChild(shape);
             this.navContainer.appendChild(wrapper);
             this.navLines.push(line);
         });
