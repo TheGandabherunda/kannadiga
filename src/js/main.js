@@ -88,7 +88,6 @@ class App {
 
     runIntroAnimation() {
         this.bgAnims.initBackgroundText();
-        this.bgAnims.initKannadaCircles();
 
         const tl = gsap.timeline();
         const topRowElements = ['.loading-text-left', '.container', '.loading-text-right'];
@@ -197,9 +196,6 @@ class App {
         const homeMount = document.getElementById('home-mount');
         const btn = welcomeView ? welcomeView.querySelector('.enter-button') : null;
 
-        this.bgAnims.createKannadaRings();
-        this.bgAnims.kannadaRings.forEach(ring => ring.opacity = 0);
-
         const logoStartRect = logoWrapper.getBoundingClientRect();
         if (welcomeView) gsap.set(welcomeView, { display: "none" });
 
@@ -230,8 +226,6 @@ class App {
         });
 
         tl.to('#bg-text-container', { duration: 0.8, autoAlpha: 0, ease: "power2.in" }, 0);
-        gsap.set('#kannada-circles-container', { autoAlpha: 1 });
-        tl.to(this.bgAnims.kannadaRings, { duration: 2.0, opacity: 1, stagger: 0.1, ease: "power2.out" }, 0.5);
 
         if (this.wreathAnim) {
             this.wreathAnim.setDirection(-1);
